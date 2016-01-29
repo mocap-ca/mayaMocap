@@ -71,7 +71,7 @@ public:
 };
 
 
-MTypeId ThreadedDevice::id( 0x10d731 );  // assigned to ikaRealtimeMocap
+MTypeId ThreadedDevice::id( 0x001126D1 ); 
 MObject ThreadedDevice::mocap;
 MObject ThreadedDevice::outputName;
 MObject ThreadedDevice::outputTranslate;
@@ -402,9 +402,9 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
 MStatus initializePlugin( MObject obj )
 {
         MStatus status;
-        MFnPlugin plugin(obj, "Laika", "1.0", "Any");
+        MFnPlugin plugin(obj, "MocapCA", "1.0", "Any");
 
-        status = plugin.registerNode( "ikaRealtimeMocap", 
+        status = plugin.registerNode( "peelRealtimeMocap", 
               ThreadedDevice::id, ThreadedDevice::creator, ThreadedDevice::initialize, MPxNode::kThreadedDeviceNode );
         if( !status ) { status.perror("failed to registerNode ThreadedDevice"); }
 
