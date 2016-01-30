@@ -10,9 +10,6 @@ NATNETDIR=H:/cpp/natnet
 INCLUDEPATH += src $${NATNETDIR}/include ../../mayaThreadedDevice
 LIBS += -L$${NATNETDIR}/lib/x64 -lNatNetLibStatic
 
-#Core
-INCLUDEPATH += ../../core
-
 LIBS += -lWs2_32 -lsetupapi
 
 QT       += core gui network
@@ -27,18 +24,18 @@ CFLAGS += /fp:strict
 SOURCES += main.cpp\
         mainwindow.cpp \
     settingsdialog.cpp \
-    ../../core/motive.cpp \
-    ../../core/rigidbody.cpp \
-    ../../core/interfacecombo.cpp \
-    ../../core/tcpconnector.cpp
+    motive.cpp \
+    rigidbody.cpp \
+    interfacecombo.cpp \
+    tcpconnector.cpp
 
 HEADERS  += mainwindow.h \
     settingsdialog.h \
-    ../../core/motive.h \
-    ../../core/rigidbody.h \
-    ../../core/interfacecombo.h \
-    ../../mayaThreadedDevice/item.h \
-    ../../core/tcpconnector.h
+    motive.h \
+    rigidbody.h \
+    interfacecombo.h \
+    ../plugin/item.h \
+    tcpconnector.h
 
 FORMS    += mainwindow.ui \
     settingsdialog.ui
