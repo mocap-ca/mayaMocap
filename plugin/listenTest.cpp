@@ -51,11 +51,13 @@ int main(int argc, char*argv[])
 
         ret = parseItems( server.readBuffer, ret,  items );
 
+
+	// Only print every one in 24 entries.
         if( c++ > 24 )
         {
         
 
-            printf("Parse returns: %d  Items: %d \n", ret, items.size());
+            printf("Parse returns: %d  Items: %zu \n", ret, items.size());
 
             for(size_t n = 0; n < items.size(); n++)
             {
@@ -66,30 +68,5 @@ int main(int argc, char*argv[])
             c=0;
         }
     }
-
-    
-    /*
-
-    items.push_back( Item( "test1", 0.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0 ) );
-    items.push_back( Item( "test2", 1.0, 2.0, 5.0, 0.0, 0.0, 0.0, 1.0 ) );
-
-    size_t ret = serializeItems( items, buf, 1024 );
-
-    for(size_t i = 0; i < ret; i++)
-    {
-        printf("%02x %02c   ", buf[i], buf[i] );
-        if(i%8==7) printf("\n");
-    }
-
-    dumpData( buf );
-
-
-    printf("----\n\n");
-
-    std::vector< Item > rebuild;
-    }*/
-
-    
-
 
 }

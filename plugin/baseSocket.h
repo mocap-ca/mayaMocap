@@ -31,7 +31,13 @@ public:
 
     ~BaseSocket()
     {
-        if(mSocket > 0) close(mSocket) ;
+        if(mSocket > 0) ::close(mSocket) ;
+    }
+
+    void close()
+    {
+        if(mSocket > 0) ::close(mSocket);
+	mSocket = -1;
     }
 
     bool isConnected()
@@ -41,11 +47,11 @@ public:
 
     virtual bool create() = 0;
 
-    bool bind( int port )
+    bool bind( uint16_t port )
     {
 
         // Close the socket if open, and create a new one
-        if(mSocket != -1) close(mSocket);
+        if(mSocket != -1) ::close(mSocket);
         if(!create()) return false;
 
         mAddr.sin_port = htons(port);

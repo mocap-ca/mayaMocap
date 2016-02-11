@@ -95,6 +95,9 @@ public:
         parser.read( buffer, buflen );
         buflen = parser.gcount();
 
+	if( !item.empty() && item[ item.size() - 1 ] == '\r' )
+		item.erase( item.size() -1 );
+
         return true;
     }
 

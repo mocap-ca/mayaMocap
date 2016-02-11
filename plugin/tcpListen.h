@@ -21,7 +21,7 @@ public:
     {
         ListenThread *t = (ListenThread*)ptr;
         t->commandThread_();
-
+	return NULL;
     }
 
     void commandThread_()
@@ -128,5 +128,7 @@ public:
     bool stop()
     {
         running = false;
+	server->close();
+	return true;
     }
 };

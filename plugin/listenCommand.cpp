@@ -28,7 +28,7 @@ MStatus ListenCommand::doIt( const MArgList &args )
     if( db.isFlagSet(portFlag) )
     {
         status = db.getFlagArgument( portFlag, 0, port );
-        if( status ) { port = port; create=true; }
+        if( status ) { create=true; }
     }
 
     if( db.isFlagSet(closeFlag) )

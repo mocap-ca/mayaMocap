@@ -58,7 +58,13 @@ public:
 class UdpClient : public UdpSocket
 {
 public:
-    bool sendDatagram(const char *host, int port, char *data, size_t len)
+    bool setBroadcast()
+    {
+        int x = 1;
+        return setsockopt( mSocket, SOL_SOCKET, SO_BROADCAST, &x, sizeof(x) ) != -1;
+    }
+
+    bool sendDatagram(const char *host, uint16_t port, const char *data, size_t len)
     {
         if( mSocket == -1) return false;
 
@@ -72,7 +78,7 @@ public:
             return false;
         }
 
-        sendto( mSocket, (void*)data, len, 0, (struct sockaddr*) &addr, sizeof( struct sockaddr ) );
+        return sendto( mSocket, (void*)data, len, 0, (struct sockaddr*) &addr, sizeof( struct sockaddr ) ) -1;
     }
         
 
