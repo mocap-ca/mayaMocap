@@ -3,7 +3,15 @@
 
 #include "tcpSocket.h"
 #include <stdio.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#define THREAD_TYPE HANDLE
+#else
 #include <pthread.h>
+#define THREAD_TYPE pthread_t
+#endif
+
 #include <list>
 #include <iostream>
 #include <string>
@@ -15,10 +23,14 @@ public:
     int       mPort;
     TcpSocket *server;
     bool      running;
-    pthread_t mThread;
+	THREAD_TYPE    mThread;
 
+#ifdef _WIN32
+    static DWORD WINAPI commandThread(VOID *ptr)
+#else
     static void* commandThread(void *ptr)
-    {
+#endif
+	{
         ListenThread *t = (ListenThread*)ptr;
         t->commandThread_();
 	return NULL;
@@ -78,7 +90,11 @@ public:
                 }
             }
 
+#ifdef _WIN32
+			if(!action) Sleep( 500 );
+#else
             if(!action) { usleep( 500000) ; }
+#endif
         }
 
         // Close open connections
@@ -118,9 +134,13 @@ public:
         mPort = port;
 
         running = true;
+#ifdef _WIN32
+		mThread = CreateThread( NULL, 0, &commandThread, (void*)this, NULL, NULL);
+#else
         pthread_attr_t attr;
         pthread_attr_init(&attr);
         int ret = pthread_create( &mThread, &attr, &commandThread, (void*)this );
+#endif
 
         return 0;
     }

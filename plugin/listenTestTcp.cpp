@@ -73,7 +73,10 @@ int main(int argc, char*argv[])
             }
         }
 
+#ifdef _WIN32
+		if(!action) { Sleep( 500 ) ; }
+#else
         if(!action) { usleep( 500000) ; }
-
+#endif
     }
 }

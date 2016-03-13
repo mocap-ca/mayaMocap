@@ -61,7 +61,7 @@ public:
     bool setBroadcast()
     {
         int x = 1;
-        return setsockopt( mSocket, SOL_SOCKET, SO_BROADCAST, &x, sizeof(x) ) != -1;
+        return setsockopt( mSocket, SOL_SOCKET, SO_BROADCAST, (const char*) &x, sizeof(x) ) != -1;
     }
 
     bool sendDatagram(const char *host, uint16_t port, const char *data, size_t len)
@@ -72,14 +72,23 @@ public:
 
         addr.sin_family = AF_INET;
         addr.sin_port   = htons(port);
+
+#ifdef _WIN32
+        if (inet_pton(AF_INET, host, &addr.sin_addr) == -1 )
+#else
         if (inet_aton(host, &addr.sin_addr) == -1 )
-        {
+#endif
+		{
             fprintf(stderr, "Invalid host\n");
             return false;
         }
 
+#ifdef _WIN32
+        return sendto( mSocket, (const char*)data, len, 0, (struct sockaddr*) &addr, sizeof( struct sockaddr ) ) -1;
+#else 
         return sendto( mSocket, (void*)data, len, 0, (struct sockaddr*) &addr, sizeof( struct sockaddr ) ) -1;
-    }
+#endif
+	}
         
 
 

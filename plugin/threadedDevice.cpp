@@ -119,7 +119,12 @@ void ThreadedDevice::threadHandler()
             {
                 fprintf(stderr, "Invalid port: %d\n", iPort);
                 sendData("Invalid Port");
-                usleep(500);
+#ifdef _WIN32
+                Sleep(500);
+#else
+				usleep(500);
+#endif
+
                 continue;
             }
 
@@ -127,7 +132,11 @@ void ThreadedDevice::threadHandler()
             {
                 fprintf(stderr, "Cannot connect\n");
                 sendData("Cannot connect");
-                usleep(500);
+#ifdef _WIN32
+                Sleep(500);
+#else
+				usleep(500);
+#endif
                 continue;
             }
         }

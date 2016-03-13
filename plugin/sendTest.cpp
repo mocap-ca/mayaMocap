@@ -70,7 +70,12 @@ int main(int argc, char *argv[])
             c = 0;
         }
         client->sendDatagram( host, port, buffer, sz);
-        usleep( 1000000 / 24 );
+
+#ifdef _WIN32 
+                Sleep(1000/24);
+#else
+				usleep( 1000000 / 24 );		
+#endif
     }
     
 

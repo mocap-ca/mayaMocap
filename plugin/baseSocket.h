@@ -2,14 +2,31 @@
 #define BASE_SOCKET_H
 
 #include <sys/types.h>
+
+#ifdef _WIN32
+#pragma comment(lib,"Ws2_32.lib")
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <stdio.h>
+#include <stdlib.h>   // Needed for _wtoi
+#include <stdint.h>
+
+#define CLOSESOCKET closesocket
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdio.h>
 #include <strings.h>
+
+#define CLOSESOCKET close
+
+#endif
+
+#include <stdio.h>
 #include <string.h>
 
 
@@ -17,7 +34,7 @@
 class BaseSocket
 {
 public:
-    int   mSocket;
+    SOCKET mSocket;
     struct sockaddr_in mAddr; // init by the constructor, excluding the port
 
 
@@ -31,12 +48,12 @@ public:
 
     ~BaseSocket()
     {
-        if(mSocket > 0) ::close(mSocket) ;
+        if(mSocket > 0) ::CLOSESOCKET(mSocket) ;
     }
 
     void close()
     {
-        if(mSocket > 0) ::close(mSocket);
+        if(mSocket > 0) ::CLOSESOCKET(mSocket);
 	mSocket = -1;
     }
 
@@ -51,7 +68,7 @@ public:
     {
 
         // Close the socket if open, and create a new one
-        if(mSocket != -1) ::close(mSocket);
+        if(mSocket != -1) ::CLOSESOCKET(mSocket);
         if(!create()) return false;
 
         mAddr.sin_port = htons(port);
