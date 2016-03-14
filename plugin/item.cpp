@@ -145,14 +145,13 @@ size_t parseItems(const char *buffer, size_t len, std::vector<Item> &items )
 		memcpy(newItem.name, name, namelen);
 		newItem.name[namelen] = 0;
 
-		ptr = data;
-
-		float *fptr = &newItem.tx;
+		float      *fptr = &newItem.tx;
+		const char *dptr = data;
 
 		for (int j = 0; j < 7 && ptr - buffer < len; j++)
 		{
-			fptr[j] = atoi(ptr);
-			ptr += strlen(ptr)+1;
+			fptr[j] = atof(ptr);
+			dptr += strlen(ptr)+1;
 		}
 
         items.push_back(newItem);

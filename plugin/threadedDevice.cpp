@@ -117,7 +117,7 @@ void ThreadedDevice::threadHandler()
 		if (!this->connect()) 
 			break;
            
-        while(!isDone() && isLive()  )
+	        while(!isDone() && isLive()  )
         {
 			size_t sz = this->receiveData(buffer, 1024);
 			if (sz == -1) break;
