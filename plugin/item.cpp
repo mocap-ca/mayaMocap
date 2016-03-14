@@ -2,6 +2,8 @@
 #include <string>
 #include <sstream>
 
+#define _CRT_SECURE_NO_WARNINGS
+
 Item:: Item( const char *name_, float tx_, float ty_, float tz_,
                         float rx_, float ry_, float rz_, float rw_ )
 {
@@ -116,43 +118,42 @@ size_t parseItems(const char *buffer, size_t len, std::vector<Item> &items )
 
     items.clear();
 
-    for(size_t i = 0; i < count && (ptr-buffer) < len; i++)
-    {
+	for (size_t i = 0; i < count && (ptr - buffer) < len; i++)
+	{
 
-	char h = *(ptr++);
-        if( h != 43 )
-        {
-            fprintf(stderr, "Invalid packet entry %02X, expected %02x\n", h, 43 );
-            return 0;
-        }
+		char h = *(ptr++);
+		if (h != 43)
+		{
+			fprintf(stderr, "Invalid packet entry %02X, expected %02x\n", h, 43);
+			return 0;
+		}
 
-        Item newItem;
+		Item newItem;
 
-        unsigned char namelen = *(ptr++);
-        unsigned char datalen = *(ptr++);
-        const char*   name    = ptr;  ptr += namelen;
-        const char*   data    = ptr;  ptr += datalen;
+		unsigned char namelen = *(ptr++);
+		unsigned char datalen = *(ptr++);
+		const char*   name = ptr;  ptr += namelen;
+		const char*   data = ptr;  ptr += datalen;
 
-        if(ptr-buffer > len)
-        {
-            fprintf(stderr, "Parser buffer overrun\n");
-            return 0;
-        }
-         
-        // Name
-        memcpy(newItem.name, name, namelen);
-        newItem.name[ namelen ] = 0;
+		if (ptr - buffer > len)
+		{
+			fprintf(stderr, "Parser buffer overrun\n");
+			return 0;
+		}
 
+		// Name
+		memcpy(newItem.name, name, namelen);
+		newItem.name[namelen] = 0;
 
-	std::istringstream iss( std::string( data, datalen ) );
+		ptr = data;
 
-	iss >> newItem.tx;  
-	iss >> newItem.ty;
-	iss >> newItem.tz;
-	iss >> newItem.rx;
-	iss >> newItem.ry;
-	iss >> newItem.rz;
-	iss >> newItem.rw;
+		float *fptr = &newItem.tx;
+
+		for (int j = 0; j < 7 && ptr - buffer < len; j++)
+		{
+			fptr[j] = atoi(ptr);
+			ptr += strlen(ptr)+1;
+		}
 
         items.push_back(newItem);
     }

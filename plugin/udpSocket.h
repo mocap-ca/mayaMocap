@@ -18,9 +18,8 @@ public:
     {
         printf("Creating udp socket\n");
         mSocket = socket( AF_INET, SOCK_DGRAM, 0);
-        return mSocket > 0;
+		return isConnected();		
     }
-
 };
 
 class UdpServer : public UdpSocket
@@ -70,14 +69,7 @@ public:
 
         struct sockaddr_in addr;
 
-        addr.sin_family = AF_INET;
-        addr.sin_port   = htons(port);
-
-#ifdef _WIN32
-        if (inet_pton(AF_INET, host, &addr.sin_addr) == -1 )
-#else
-        if (inet_aton(host, &addr.sin_addr) == -1 )
-#endif
+		if(!getHostAddr( host, port, addr ))
 		{
             fprintf(stderr, "Invalid host\n");
             return false;

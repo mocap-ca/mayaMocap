@@ -17,6 +17,17 @@ void intHandler( int x )
 
 int main(int argc, char *argv[])
 {
+#ifdef _WIN32
+	int iResult;
+
+	WSADATA wsaData;
+	// Initialize Winsock
+	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != 0) {
+		printf("WSAStartup failed: %d\n", iResult);
+		return 1;
+	}
+#endif
 
     if( argc != 3 )
     {
@@ -83,6 +94,8 @@ int main(int argc, char *argv[])
     delete client;
 
     
-    
+#ifdef _WIN32
+	WSACleanup();
+#endif
 
 }

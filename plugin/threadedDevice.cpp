@@ -14,25 +14,24 @@
 #include <maya/MThreadAsync.h>
 
 
-#include "udpSocket.h"
+
 #include "item.h"
 #include <vector>
 #include <string>
 
-MTypeId ThreadedDevice::id( 0x001126D1 ); 
+
 MObject ThreadedDevice::mocap;
 MObject ThreadedDevice::outputName;
 MObject ThreadedDevice::outputTranslate;
 MObject ThreadedDevice::outputRotate;
-MObject ThreadedDevice::port;
+
 MObject ThreadedDevice::info;
 
 
 #define MCONT(s, msg) if( s != MS::kSuccess) { s.perror(msg); continue; }
 #define MCHECKERROR(x, msg) { if(x!=MS::kSuccess) { x.perror(msg); return x;} }
 
-#define DEFAULT_PORT 9119
-#define DEFAULT_CMDPORT 9120
+
 
 void ThreadedDevice::postConstructor()
 {
@@ -93,6 +92,7 @@ void ThreadedDevice::sendData(const char *message, size_t msglen, const char *da
 
 
 
+
 void ThreadedDevice::threadHandler()
 {
     MStatus status;
@@ -106,61 +106,32 @@ void ThreadedDevice::threadHandler()
 
     printf("Starting thread\n");
 
-    UdpServer socket;
+    
+	char buffer[1024];
 
 
     while(!isDone())
     {
         if(!isLive()) continue;
 
-        if(!socket.isConnected())
-        {
-            if(iPort < 1024)
-            {
-                fprintf(stderr, "Invalid port: %d\n", iPort);
-                sendData("Invalid Port");
-#ifdef _WIN32
-                Sleep(500);
-#else
-				usleep(500);
-#endif
-
-                continue;
-            }
-
-            if(!socket.bind(iPort))
-            {
-                fprintf(stderr, "Cannot connect\n");
-                sendData("Cannot connect");
-#ifdef _WIN32
-                Sleep(500);
-#else
-				usleep(500);
-#endif
-                continue;
-            }
-        }
-
+		if (!this->connect()) 
+			break;
+           
         while(!isDone() && isLive()  )
         {
-
-            int ret = socket.receive();  // get the data, or timeout
-            //int ret = socket.stub();
-            if( ret == -1) break;  // error
-            if( ret == 0 ) continue; // timeout
-
-            char buf[128];
-            sprintf(buf, "Listening on port: %d", iPort);
-
-            sendData( buf, 0, socket.readBuffer, socket.buflen);
+			size_t sz = this->receiveData(buffer, 1024);
+			if (sz == -1) break;
+			if (sz == 0) continue;
+			if(sz > 0) sendData( 0, 0, buffer, sz);
         }
-
     }
 
-    sendData("Stopped");
-
+	disconnect();
+	
+	sendData("Stopped");
 
     printf("Thread Finished\n");
+
 
     setDone(true);
 }
@@ -189,10 +160,6 @@ MStatus ThreadedDevice::initialize()
         status = addAttribute(info);
         MCHECKERROR(status, "add info");
 
-       
-        // port
-        port = numAttr.create("port", "p", MFnNumericData::kInt, DEFAULT_PORT, &status);
-        status = addAttribute(port);
 
         // Name 
         outputName = tAttr.create("name", "n", MFnData::kString, MObject::kNullObj, &status);
@@ -221,9 +188,6 @@ MStatus ThreadedDevice::initialize()
 
         attributeAffects( mocap, outputTranslate );
         attributeAffects( mocap, outputRotate );
-        attributeAffects( port, mocap );
-
-        attributeAffects( port, mocap );
 
 
         return MS::kSuccess;
@@ -242,9 +206,6 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
 
         
     MObject thisNode = thisMObject();
-
-    MDataHandle hPort = block.inputValue( port, &status );
-    iPort = hPort.asInt();
 
 
     // Get an entry

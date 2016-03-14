@@ -54,12 +54,16 @@ public:
     void close()
     {
         if(mSocket > 0) ::CLOSESOCKET(mSocket);
-	mSocket = -1;
+		mSocket = -1;
     }
 
     bool isConnected()
     {
+#ifdef _WIN32
+		return mSocket != INVALID_SOCKET;
+#else
         return mSocket > 0;
+#endif
     }
 
     virtual bool create() = 0;
@@ -103,6 +107,18 @@ public:
         if(! FD_ISSET( mSocket, &read_set ) ) return 0;
         return 1;
     }
+
+	bool getHostAddr(const char *host, uint16_t port, struct sockaddr_in &addr)
+	{
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(port);
+
+#ifdef _WIN32
+		return inet_pton(AF_INET, host, &addr.sin_addr) != -1;
+#else
+		return inet_aton(host, &addr.sin_addr) != -1;
+#endif
+	}
  
 
 };

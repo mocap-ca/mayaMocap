@@ -8,10 +8,9 @@
 #include <maya/MGlobal.h>
 //#include <api_macros.h>
 
-#include "threadedDevice.h"
+#include "udpDevice.h"
 #include "listenCommand.h"
 #include "pingCommand.h"
-#include "memoryNode.h"
 
 MStatus initializePlugin( MObject obj )
 {
@@ -19,7 +18,7 @@ MStatus initializePlugin( MObject obj )
         MFnPlugin plugin(obj, "MocapCA", "1.0", "Any");
 
         status = plugin.registerNode( "peelRealtimeMocap", 
-              ThreadedDevice::id, ThreadedDevice::creator, ThreadedDevice::initialize, MPxNode::kThreadedDeviceNode );
+			UdpDevice::id, UdpDevice::creator, UdpDevice::initialize, MPxNode::kThreadedDeviceNode );
         if( !status ) { status.perror("failed to registerNode ThreadedDevice"); }
 
 	status = plugin.registerCommand( "mocapListen", ListenCommand::creator, ListenCommand::newSyntax);
@@ -28,9 +27,6 @@ MStatus initializePlugin( MObject obj )
 	status = plugin.registerCommand( "mocapPing", PingCommand::creator, PingCommand::newSyntax);
         if(!status) { status.perror("failed to register ping command"); }
 
-	status = plugin.registerNode("mocapMemory", Memory::id, Memory::creator, Memory::initialize);
-        if(!status) { status.perror("failed to register memory memory"); }
-	
 
         return status;
 }
@@ -39,8 +35,8 @@ MStatus uninitializePlugin( MObject obj )
 {
         MStatus status;
         MFnPlugin plugin(obj);
-        status = plugin.deregisterNode( ThreadedDevice::id );
-        if( !status ) { status.perror("failed to deregisterNode ThreadedDevice"); }
+        status = plugin.deregisterNode( UdpDevice::id );
+        if( !status ) { status.perror("failed to deregisterNode UdpDevice"); }
 
         status = plugin.deregisterCommand( "mocapListen" );
         if( !status) { status.perror( "failed to deregister mocap listem command"); }
@@ -48,8 +44,6 @@ MStatus uninitializePlugin( MObject obj )
         status = plugin.deregisterCommand( "mocapPing" );
         if( !status) { status.perror( "failed to deregister mocap ping command"); }
 
-        status = plugin.deregisterNode( Memory::id );
-        if( !status) { status.perror( "failed to deregister mocap memory node"); }
 
         return status;
 }

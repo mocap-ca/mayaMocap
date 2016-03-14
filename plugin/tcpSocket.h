@@ -6,6 +6,8 @@
 #include <sstream>
 #include <string>
 
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 class TcpSocket : public BaseSocket
 {
 public:
@@ -110,10 +112,12 @@ public:
             return false;
         }
 
-        hostent *hp = gethostbyname( host );
+		getHostAddr(host, port,  mAddr);
 
-        mAddr.sin_addr.s_addr = *((unsigned long*)hp->h_addr);
-        mAddr.sin_port = htons( port );
+        //hostent *hp = gethostbyname( host );
+
+        //mAddr.sin_addr.s_addr = *((unsigned long*)hp->h_addr);
+        //mAddr.sin_port = htons( port );
 
         if( ::connect( mSocket, (sockaddr*) &mAddr, sizeof( sockaddr ) ) == -1 )
         {
