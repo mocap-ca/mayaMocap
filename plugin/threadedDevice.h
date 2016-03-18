@@ -25,6 +25,7 @@ public:
     void sendData(const char*message, size_t msglen=0, const char* data=NULL, size_t datalen = 0);
 
 	virtual bool connect() = 0; 
+    virtual bool isConnected() = 0;
 	virtual bool disconnect() = 0;
 	virtual size_t receiveData(char *, size_t) = 0;
 

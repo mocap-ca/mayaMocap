@@ -7,7 +7,7 @@
 
 #NatNet
 NATNETDIR=H:/cpp/natnet
-INCLUDEPATH += src $${NATNETDIR}/include ../../mayaThreadedDevice
+INCLUDEPATH += src $${NATNETDIR}/include ../../mayaThreadedDevice  ../plugin
 LIBS += -L$${NATNETDIR}/lib/x64 -lNatNetLibStatic
 
 LIBS += -lWs2_32 -lsetupapi
@@ -27,7 +27,8 @@ SOURCES += main.cpp\
     motive.cpp \
     rigidbody.cpp \
     interfacecombo.cpp \
-    tcpconnector.cpp
+    tcpconnector.cpp \
+    ../plugin/item.cpp
 
 HEADERS  += mainwindow.h \
     settingsdialog.h \

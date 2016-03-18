@@ -10,8 +10,9 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QMap>
+#include <QList>
 #include <QMutex>
-#include <QTimer>
+#include <QCheckBox>
 #include "rigidBody.h"
 
 #include <QUdpSocket>
@@ -23,12 +24,12 @@ class Motive : public QWidget
 public:
     explicit Motive(QWidget *parent = 0);
     ~Motive();
-    void initialize(bool multicast, QString local, QString remote, int commandPort, int dataPort);
-    void setUdp( QHostAddress, int);
+    void initialize(QString local, QString remote, int commandPort, int dataPort, QString udpTarget, int udpPort);
+    void getDescriptions();
     int doConnect();
     void doDisconnect();
 
-    QPushButton* button;
+    QCheckBox*   checkboxOnline;
     QPushButton* buttonRb;
     QHBoxLayout* layout;
     QLabel*      label;
@@ -47,17 +48,12 @@ public:
     bool stop();
     bool play();
 
-    bool store;
-
     void dataCallback( sFrameOfMocapData* );
     void messageCallback( int, char * );
 
     QList <int> getRbIds();
     RigidBody getRbData(int id);
     QString   getRbName(int id);
-
-    QHostAddress udpHost;
-    int          udpPort;
 
 
 private:
@@ -69,15 +65,23 @@ private:
     int     mCommandPort;
     int     mDataPort;
 
-    QMap <int, QString> descriptions;
+    QList <QString> mkrDesc;
+
+    QMap <int, QString> rbDesc;
     QMap <int, RigidBody> rbData;
+    QMap <int, QString>  skelNames;
+    QMap <int, QString > skelDesc;
 
     QMutex dataMutex;
+
+    QString mUdpServer;
+    int     mUdpPort;
+    bool    store;
 
 
 private slots:
     void logMessage(QString);
-    void connect_button();
+    void online(bool);
     void testRb();
     void frameInfo(int, QString);
     void fpsEvent();

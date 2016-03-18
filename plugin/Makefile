@@ -1,17 +1,15 @@
 PLUGIN_NAME=peelRealtimeMocap
 PLUGIN_VERSION=1
 
-PLUGIN_SRC = plugin.cpp listenCommand.cpp pingCommand.cpp item.cpp threadedDevice.cpp memoryNode.cpp
+PLUGIN_SRC = plugin.cpp listenCommand.cpp pingCommand.cpp item.cpp threadedDevice.cpp memoryNode.cpp udpDevice.cpp
 HEADER_SRC = udpSocket.h baseSocket.h tcpListen.h listenCommand.h
 
 
 include mayaplugin.mk
 
-ifndef C++
-C++ = g++ -O0 -g
-endif
+LFLAGS += -pthread
 
-#OUT=peelRealtimeMocap_$(BV).mll
+
 
 #tests : listenTest sendTest listenTestTcp
 #	@echo Building $(OUT)

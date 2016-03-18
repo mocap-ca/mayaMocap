@@ -14,7 +14,9 @@
 
 #define CLOSESOCKET closesocket
 #else
+
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -23,6 +25,7 @@
 #include <strings.h>
 
 #define CLOSESOCKET close
+#define SOCKET int
 
 #endif
 

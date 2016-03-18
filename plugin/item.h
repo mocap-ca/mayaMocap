@@ -24,12 +24,21 @@ message is formatted as a series of string encoded floats, seperated by '0'
 
 class Item
 {
-public:
+public :
     Item() {}
+    virtual ~Item() {}
+    Item( const char *name );
+    char  name[30];
 
-    Item( const char *name_, float tx_, float ty_, float tz_,
+};
+
+class Segment : public Item
+{
+public:
+    Segment() {}
+
+    Segment( const char *name_, float tx_, float ty_, float tz_,
                         float rx_, float ry_, float rz_, float rw_ );
-    char  name[20];
     float tx;
     float ty;
     float tz;
@@ -39,12 +48,25 @@ public:
     float rw;
 };
 
+class Marker : public Item
+{
+public:
+    Marker() {}
+
+    Marker( const char *name_, float tx_, float ty_, float tz );
+
+    float tx;
+    float ty;
+    float tz;
+};
 
 
-size_t serializeItems( std::vector<Item> &items,  char *buffer, size_t buflen);
+
+
+size_t serializeItems( std::vector<Item*> &items,  char *buffer, size_t buflen);
         
 void dumpData( const char *buffer) ;
 
-size_t parseItems(const char *buffer, size_t len, std::vector<Item> &items );
+size_t parseItems(const char *buffer, size_t len, std::vector<Item*> *items );
 
 #endif // ITEM_H

@@ -31,11 +31,6 @@ bool UdpDevice::connect()
 	{
 		fprintf(stderr, "Invalid port: %d\n", iPort);
 		sendData("Invalid Port");
-#ifdef _WIN32
-		Sleep(500);
-#else
-		usleep(500);
-#endif
 		return false;
 	}
 
@@ -43,15 +38,15 @@ bool UdpDevice::connect()
 	{
 		fprintf(stderr, "Cannot connect\n");
 		sendData("Cannot connect");
-#ifdef _WIN32
-		Sleep(500);
-#else
-		usleep(500);
-#endif
 		return false;
 	}
 
 	return true;
+}
+
+bool UdpDevice::isConnected()
+{
+    return socket.isConnected();
 }
 
 bool UdpDevice::disconnect()
@@ -68,7 +63,7 @@ size_t UdpDevice::receiveData(char *data, size_t buflen)
 	if (ret == 0) return 0; // timeout
 
 	char buf[128];
-	std::cout << "Listening on port: " << iPort;
+	//std::cout << "Listening on port: " << iPort;
 	if (socket.buflen > buflen)
 	{
 		fprintf(stderr, "Buffer overflow\n");

@@ -14,6 +14,7 @@ public:
 	virtual MStatus     compute(const MPlug& plug, MDataBlock& data);
 
 	virtual bool connect();
+    virtual bool isConnected();
 	virtual bool disconnect();
 	size_t receiveData(char*, size_t);
 

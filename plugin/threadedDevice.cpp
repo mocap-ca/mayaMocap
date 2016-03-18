@@ -13,7 +13,7 @@
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MThreadAsync.h>
 
-
+#include <unistd.h>
 
 #include "item.h"
 #include <vector>
@@ -31,14 +31,14 @@ MObject ThreadedDevice::info;
 #define MCONT(s, msg) if( s != MS::kSuccess) { s.perror(msg); continue; }
 #define MCHECKERROR(x, msg) { if(x!=MS::kSuccess) { x.perror(msg); return x;} }
 
-
+#define BUFSIZE 9200
 
 void ThreadedDevice::postConstructor()
 {
     MObjectArray oArray;
     oArray.append( ThreadedDevice::mocap );
     setRefreshOutputAttributes(oArray);
-    createMemoryPools(1, 1024, 1);
+    createMemoryPools(1, BUFSIZE, 1);
 }
 
 ThreadedDevice::~ThreadedDevice()
@@ -61,13 +61,20 @@ void ThreadedDevice::sendData(const char *message, size_t msglen, const char *da
          msglen = strlen(message);
     }
 
+    if ( datalen + msglen + 2  >= BUFSIZE )
+    {
+        // Overflow
+        return;
+    }
+
     MCharBuffer buffer;
     status = acquireDataStorage(buffer);
     if( status != MS::kSuccess )
     {
+#ifdef _DEBUG
         printf("X");
         fflush(stdout);
-        //status.perror("thread storage error");
+#endif
         return;
     }
 
@@ -102,24 +109,29 @@ void ThreadedDevice::threadHandler()
 
     int i;
     
-    char receiveBuffer[1024];
+    char receiveBuffer[BUFSIZE];
 
     printf("Starting thread\n");
 
     
-	char buffer[1024];
+	char buffer[BUFSIZE];
 
 
     while(!isDone())
     {
         if(!isLive()) continue;
 
-		if (!this->connect()) 
-			break;
+
+        if (!this->isConnected())
+        {
+            this->connect();
+            usleep(500);
+            continue;
+        }
            
 	        while(!isDone() && isLive()  )
         {
-			size_t sz = this->receiveData(buffer, 1024);
+			size_t sz = this->receiveData(buffer, BUFSIZE);
 			if (sz == -1) break;
 			if (sz == 0) continue;
 			if(sz > 0) sendData( 0, 0, buffer, sz);
@@ -237,9 +249,9 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
         MArrayDataHandle outHandle = block.outputArrayValue( mocap, &status );
         MCHECKERROR( status, "mocap handle");
 
-        std::vector<Item> items;
+        std::vector<Item*> items;
 
-        parseItems( data, datalen, items );
+        parseItems( data, datalen, &items );
         
         MPlug tPlug(thisNode, outputTranslate);
         MPlug rPlug(thisNode, outputRotate);
@@ -248,25 +260,22 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
         int arrayIndex;
         int id = 0;
 
-        for(std::vector<Item>::iterator i = items.begin(); i != items.end(); i++, id++)
+        for(std::vector<Item*>::iterator i = items.begin(); i != items.end(); i++, id++)
         {
             arrayIndex = id;
-            if( strcmp( (*i).name, "VCAM") == 0 ) arrayIndex = 100;
+            if( strcmp( (*i)->name, "VCAM") == 0 ) arrayIndex = 100;
 
-            // Translation
+            // Translation Handle
             status = tPlug.selectAncestorLogicalIndex( arrayIndex, mocap );
             MCHECKERROR(status, "Selecting translate attribute");
 
             MDataHandle tHandle = tPlug.constructHandle(block);
             MCHECKERROR(status, "Creating translation handle");
 
-            float3& otrans = tHandle.asFloat3();
-            otrans[0] = (*i).tx;
-            otrans[1] = (*i).ty;
-            otrans[2] = (*i).tz;
+            Marker  *marker  = dynamic_cast<Marker*> (*i);
+            Segment *segment = dynamic_cast<Segment*> (*i);
 
-            tPlug.setValue(tHandle);
-            tPlug.destructHandle(tHandle);
+            float3& otrans = tHandle.asFloat3();
 
             // Rotation 
             status = rPlug.selectAncestorLogicalIndex( arrayIndex, mocap );
@@ -276,11 +285,37 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
             MCHECKERROR( status, "adding rotation element" );
 
             float3& orot = rHandle.asFloat3();
-            MQuaternion q( (*i).rx, (*i).ry, (*i).rz, (*i).rw); 
-            MEulerRotation e = q.asEulerRotation();
-            orot[0] = e.x * 57.2958f;
-            orot[1] = e.y * 57.2958f;
-            orot[2] = e.z * 57.2958f;
+
+            if(marker) 
+            {
+
+                otrans[0] = marker->tx;
+                otrans[1] = marker->ty;
+                otrans[2] = marker->tz;
+                orot[0] = 0.0f;
+                orot[1] = 0.0f;
+                orot[2] = 0.0f;
+
+  
+            }
+
+            if (segment) 
+            {
+                otrans[0] = segment->tx;
+                otrans[1] = segment->ty;
+                otrans[2] = segment->tz;
+
+                MQuaternion q( segment->rx, segment->ry, segment->rz, segment->rw); 
+                MEulerRotation e = q.asEulerRotation();
+
+                orot[0] = e.x * 57.2958f;
+                orot[1] = e.y * 57.2958f;
+                orot[2] = e.z * 57.2958f;
+            }
+
+
+            tPlug.setValue(tHandle);
+            tPlug.destructHandle(tHandle);
 
             rPlug.setValue(rHandle);
             rPlug.destructHandle(rHandle);
@@ -292,10 +327,12 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
             MDataHandle nHandle = nPlug.constructHandle(block);
             MCHECKERROR( status, "adding name element" );
         
-            nHandle.set(MString((*i).name));
+            nHandle.set(MString((*i)->name));
 
             nPlug.setValue(nHandle);
             nPlug.destructHandle(nHandle);
+
+            delete *i;
 
         }
     }

@@ -5,7 +5,7 @@
 
 #include "item.h"
 
-#define BUFSIZE 1024
+#define BUFSIZE 9200
 
 // Wrap the unix socket funcions in to a simple class
 class UdpSocket : public BaseSocket
@@ -47,7 +47,7 @@ public:
         if(ret < 1) return ret;
 
         // Copy the data in to a local buffer
-        buflen = ::recvfrom(mSocket, readBuffer, 1024, 0, (struct sockaddr *)&clientAddress, &addrLen );
+        buflen = ::recvfrom(mSocket, readBuffer, BUFSIZE, 0, (struct sockaddr *)&clientAddress, &addrLen );
 
         return buflen;
     }
