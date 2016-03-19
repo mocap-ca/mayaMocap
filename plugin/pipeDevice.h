@@ -13,6 +13,7 @@ public:
 
 	virtual bool connect();
 	virtual bool disconnect();
+	virtual bool isConnected();
 	size_t receiveData(char*, size_t);
 
 	static MObject      port;

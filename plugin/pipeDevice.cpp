@@ -1,8 +1,9 @@
 #include "pipeDevice.h"
 
 #include <Windows.h>
+#include <tchar.h>
 
-#define PIPENAME "\\\\.\\pipe\\vrmocap"
+#define PIPENAME _T("\\\\.\\pipe\\vrmocap")
 #define _CRT_SECURE_NO_WARNINGS
 
 MTypeId PipeDevice::id(0x001126D2);
@@ -25,7 +26,11 @@ bool PipeDevice::connect()
 		return false;
 	}
 	return true;
+}
 
+bool PipeDevice::isConnected()
+{
+	return hPipe != INVALID_HANDLE_VALUE;
 }
 
 bool PipeDevice::disconnect()

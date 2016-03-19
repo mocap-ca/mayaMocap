@@ -13,7 +13,9 @@
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MThreadAsync.h>
 
-#include <unistd.h>
+// for sleep
+#include <chrono>
+#include <thread>
 
 #include "item.h"
 #include <vector>
@@ -125,8 +127,10 @@ void ThreadedDevice::threadHandler()
         if (!this->isConnected())
         {
             this->connect();
-            usleep(500);
-            continue;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+			continue;
         }
            
 	        while(!isDone() && isLive()  )

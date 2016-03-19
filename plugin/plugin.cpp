@@ -11,6 +11,7 @@
 #include "udpDevice.h"
 #include "listenCommand.h"
 #include "pingCommand.h"
+#include "meshNode.h"
 
 #ifdef _WIN32
 #include "pipeDevice.h"
@@ -35,6 +36,9 @@ MStatus initializePlugin( MObject obj )
 	if (!status) { status.perror("failed to registerNode ThreadedDevice"); }
 #endif
 
+	status = plugin.registerNode("MocapMesh", MocapMesh::id, &MocapMesh::creator, MocapMesh::initialize);
+	if(status != MS::kSuccess) { status.perror("Could not register node");}
+
 
 	return status;
 }
@@ -51,6 +55,10 @@ MStatus uninitializePlugin( MObject obj )
 
 	status = plugin.deregisterCommand( "mocapPing" );
 	if( !status) { status.perror( "failed to deregister mocap ping command"); }
+
+	status = plugin.deregisterNode(MocapMesh::id);
+	if(status != MS::kSuccess) { status.perror("Could not deregister node");}
+
 
 
 	return status;
