@@ -50,12 +50,13 @@ ThreadedDevice::~ThreadedDevice()
 
 
 /*
- *  Main Thread - gets the data from the socket and saves it in the maya storage buffer
+ *  Device Thread - gets the data from the socket and saves it in the maya storage buffer
  */
 
 void ThreadedDevice::sendData(const char *message, size_t msglen, const char *data, size_t datalen)
 {
     // Send the message length and data lengths as two size_t's, then send the message and the data
+
     MStatus status;
     if(message != NULL && msglen == 0)
     {
@@ -104,6 +105,8 @@ void ThreadedDevice::sendData(const char *message, size_t msglen, const char *da
 
 void ThreadedDevice::threadHandler()
 {
+	// Called by maya as the entry point to the device thread
+
     MStatus status;
     setDone(false);
 
@@ -113,8 +116,9 @@ void ThreadedDevice::threadHandler()
     
     char receiveBuffer[BUFSIZE];
 
-    printf("Starting thread\n");
+	sendData("Init");
 
+    printf("Starting thread\n");
     
 	char buffer[BUFSIZE];
 
@@ -126,19 +130,27 @@ void ThreadedDevice::threadHandler()
 
         if (!this->isConnected())
         {
+			
+			// Connect should send a status message
             this->connect();
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 			continue;
         }
+
+		
            
-	        while(!isDone() && isLive()  )
-        {
+	    while(!isDone() && isLive()  )
+		{
+			// receive data should send a status message if return <= 0
 			size_t sz = this->receiveData(buffer, BUFSIZE);
 			if (sz == -1) break;
-			if (sz == 0) continue;
-			if(sz > 0) sendData( 0, 0, buffer, sz);
+			if (sz == 0) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));				
+				continue;
+			}
+			if(sz > 0) sendData( "Receiving", 0, buffer, sz);
         }
     }
 

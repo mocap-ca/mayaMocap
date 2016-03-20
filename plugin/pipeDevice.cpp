@@ -22,7 +22,10 @@ bool PipeDevice::connect()
 
 	if (hPipe == INVALID_HANDLE_VALUE)
 	{
-		printf("Could not create pipe\n");
+		TCHAR buf[1024];
+		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, GetLastError(), 0, buf, 1024 * sizeof(TCHAR), 0);
+		sendData(buf);
+		printf("Could not create pipe: %s", buf);
 		return false;
 	}
 	return true;
@@ -43,6 +46,9 @@ bool PipeDevice::disconnect()
 
 size_t PipeDevice::receiveData(char *data, size_t buflen)
 {
+	// Overloaded method to get the data from the pipe.
+	// Should send a message if return <= 0
+
 	DWORD len = buflen;
 	BOOL ret = ReadFile(hPipe, data, 1024, &len, NULL);
 	if (ret) return len;
@@ -51,19 +57,24 @@ size_t PipeDevice::receiveData(char *data, size_t buflen)
 
 	if (err == ERROR_PIPE_LISTENING)
 	{
-		// Other end has not opened 
+		// Other end has not opened
+		sendData("Listening");
 		return 0;
 	}
 
 	if (err == ERROR_BROKEN_PIPE)
 	{
+		CloseHandle(hPipe);
 		hPipe = INVALID_HANDLE_VALUE;
+		sendData("No Connection");
 		return 0;
 	}
 
 	TCHAR buf[1024];
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, err, 0, buf, 1024 * sizeof(TCHAR), 0);
 	printf("%s", buf);
+
+	sendData(buf);
 
 	return -1;
 

@@ -11,11 +11,23 @@
 #include <maya/MPointArray.h>
 #include <maya/MIntArray.h>
 
+
+#include <tchar.h>
+
+
+#define PIPENAME _T("\\\\.\\pipe\\vrmocapmesh")
+#define _CRT_SECURE_NO_WARNINGS
+
 MObject MocapMesh::in_inMesh;
 MObject MocapMesh::out_message;
 
 MocapMesh::MocapMesh()
 	: value(0.0) {}
+
+MocapMesh::~MocapMesh()
+{
+	if (hPipe != INVALID_HANDLE_VALUE) CloseHandle(hPipe);
+}
 
 void* MocapMesh::creator() { return new MocapMesh(); }
 MTypeId MocapMesh::id(0x001126D3);
@@ -23,8 +35,6 @@ MTypeId MocapMesh::id(0x001126D3);
 MStatus MocapMesh::initialize()
 {
 	MStatus stat;
-
-	
 
 	MFnTypedAttribute tAttr;
 	MFnNumericAttribute nAttr;
@@ -49,6 +59,16 @@ MStatus MocapMesh::initialize()
 	if(!stat) { stat.perror("attributeAffects"); return stat; }
 	return MS::kSuccess;
 }
+
+
+void MocapMesh::postConstructor()
+{
+	hPipe = CreateNamedPipe(PIPENAME, PIPE_ACCESS_OUTBOUND, PIPE_TYPE_BYTE, 2, 0, 0, 0, NULL);
+
+	if (hPipe == INVALID_HANDLE_VALUE)
+		printf("Could not create pipe\n");
+}
+
 MStatus MocapMesh::compute( const MPlug &plug, MDataBlock &data )
 {
 	MStatus stat;
@@ -70,34 +90,57 @@ MStatus MocapMesh::compute( const MPlug &plug, MDataBlock &data )
 	fnMesh.getPoints( points );
 
 	MIntArray vertCount, vertList;
-	fnMesh.getVertices( vertCount, vertList );
+	fnMesh.getTriangles( vertCount, vertList );
 
-	FILE * fp = fopen( "c:\\users\\al\\mesh.txt", "w");
-	if(fp)
+
+
+	if (hPipe)
 	{
-		int i;
-		for( i = 0; i < points.length(); i++)
+		size_t pointLen = points.length() * sizeof(float) * 3;
+		size_t vertLen = vertList.length() * sizeof(int);
+		size_t headLen = 3 * sizeof(int);
+		size_t packetLen = pointLen + vertLen + headLen;
+			
+
+		char *data = (char*) malloc(packetLen);
+
+		unsigned int * header = (unsigned int*)data;
+
+		header[0] = 0x3223;
+		header[1] = pointLen;
+		header[2] = vertLen;
+		
+		float *fptr = (float*) (data + headLen);
+
+		for (int i = 0; i < points.length(); i++)
 		{
-			fprintf(fp,  "%f %f %f %f\n", points[i].x,  points[i].y,  points[i].z,  points[i].w );
+			*fptr = (float)points[i].x;  fptr++;
+			*fptr = (float)points[i].y;  fptr++;
+			*fptr = (float)points[i].z;  fptr++;
 		}
 
-		for( i = 0; i < vertCount.length(); i++)
+		int *iptr = (int*) ( data + headLen + pointLen );
+		for (int i = 0; i < vertList.length(); i++)
 		{
-			fprintf(fp, "%d ", vertCount[i] );
+			*iptr = vertList[i];  iptr++;
 		}
-		fprintf(fp, "\n");
 
-		for( i = 0; i < vertList.length(); i++)
+		DWORD written;
+		if (!WriteFile(hPipe, data, packetLen, &written, NULL))
 		{
-			fprintf(fp, "%d ", vertList[i] );
+			TCHAR buf[1024];
+			FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, GetLastError(), 0, buf, 1024 * sizeof(TCHAR), 0);
+			printf("Error Writing to pipe: %s", buf);
 		}
-		fprintf(fp, "\n");
+
+		free(data);
+
+		
+
 
 	}
 
-	double *pointdata = & (points[0].x  );
-	int * countdata   = & (vertCount[0] );
-	int * vertdata    = & (vertList[0]  );
+	
 
 
 

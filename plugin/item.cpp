@@ -154,7 +154,7 @@ size_t parseItems(const char *buffer, size_t len, std::vector<Item*> *items )
             float   *fptr = &segment->tx;
             size_t   dptr = 0;
 
-            for (int j = 0; j < 7 && ptr - buffer < len; j++)
+            for (int j = 0; j < 7 && ptr - buffer <= len; j++)
             {
                 fptr[j] = atof(data+dptr);
                 dptr += strlen(data+dptr)+1;

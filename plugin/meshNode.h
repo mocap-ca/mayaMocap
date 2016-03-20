@@ -8,17 +8,20 @@
 #include <maya/MDataBlock.h>
 
 
-
+#include <Windows.h>
 
 
 class MocapMesh : public MPxNode
 {
 public:
 	MocapMesh();
+	~MocapMesh();
 
 	MStatus               compute( const MPlug& plug, MDataBlock& data );
 	static  void*    creator();
 	static  MStatus  initialize();
+
+	void  postConstructor();
 
 	static  MTypeId  id;
 
@@ -26,6 +29,8 @@ public:
 	static MObject out_message;
 
 	double value;
+
+	HANDLE hPipe;
 };
 
 
