@@ -10,6 +10,7 @@ MSyntax ListenCommand::newSyntax()
     MSyntax s;
     s.addFlag(portFlag,  portFlagLong , MSyntax::kUnsigned );
     s.addFlag(closeFlag, closeFlagLong );
+	s.addFlag(moduleFlag, moduleFlagLong);
     return s;
 
 }
@@ -24,12 +25,18 @@ MStatus ListenCommand::doIt( const MArgList &args )
     port = 0;
     create = false;
     close = false;
+	module = "";
 
-    if( db.isFlagSet(portFlag) )
-    {
-        status = db.getFlagArgument( portFlag, 0, port );
-        if( status ) { create=true; }
-    }
+	if (db.isFlagSet(portFlag))
+	{
+		status = db.getFlagArgument(portFlag, 0, port);
+		if (status) { create = true; }
+	}
+	
+	if (db.isFlagSet(moduleFlag))
+	{
+		status = db.getFlagArgument(moduleFlag, 0, module);
+	}
 
     if( db.isFlagSet(closeFlag) )
     {
@@ -48,9 +55,15 @@ MStatus ListenCommand::redoIt()
         return MS::kFailure;
     }
 
+
     if(create && port > 1024)
     {
-        if( listener.start(port) == 0 )
+		if (module == "")
+		{
+			MGlobal::displayError("No module specified");
+			return MS::kFailure;
+		}
+        if( listener.start(port, module) == 0 )
         {
             MGlobal::displayInfo("started");
         }

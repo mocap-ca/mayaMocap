@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <vector>
 
+// for sleep
+#include <chrono>
+#include <thread>
+
 UdpClient *client = NULL;
 
 bool run = true;
@@ -53,9 +57,12 @@ int main(int argc, char *argv[])
 
     char buffer[1024];
 
-    std::vector< Item > items;
-    items.push_back( Item( "test1", 0.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0 ) );
-    items.push_back( Item( "test2", 1.0, 2.0, 5.0, 0.0, 0.0, 0.0, 1.0 ) );
+	Segment *s1 = new Segment("test1", 0.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0);
+	Segment *s2 = new Segment("test2", 1.0, 2.0, 5.0, 0.0, 0.0, 0.0, 1.0);
+
+    std::vector< Item* > items;
+    items.push_back( s1 );
+    items.push_back( s2 );
 
 
     float testval = 0.0f;
@@ -66,8 +73,8 @@ int main(int argc, char *argv[])
     while(run)
     {
 
-        items[0].ty = testval * 2;
-        items[1].tx = testval * 3;
+        s1->ty = testval * 2;
+        s2->tx = testval * 3;
         testval += 0.1f;
         if(testval > 10.0f) testval = 0.0f;
 
@@ -82,12 +89,11 @@ int main(int argc, char *argv[])
         }
         client->sendDatagram( host, port, buffer, sz);
 
-#ifdef _WIN32 
-                Sleep(1000/24);
-#else
-				usleep( 1000000 / 24 );		
-#endif
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000/24));
     }
+
+	delete s1;
+	delete s2;
     
 
     printf("Closing socket\n");

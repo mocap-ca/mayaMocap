@@ -19,11 +19,17 @@
 class ListenThread
 {
 public:
-    ListenThread() : mPort(-1), server(NULL), running(false) {}
+    ListenThread() : 
+		mPort(-1), 
+		server(NULL), 
+		running(false) 
+		 {}
+
     int       mPort;
     TcpSocket *server;
     bool      running;
 	THREAD_TYPE    mThread;
+	MString        mModule;
 
 #ifdef _WIN32
     static DWORD WINAPI commandThread(VOID *ptr)
@@ -80,7 +86,12 @@ public:
                     std::string data;
                     while( eachSocket->get( data ) ) 
                     {
-                        MString cmd("from ikaRig.mocap import rt; rt.data('");
+
+						MString cmd("import ");
+						cmd += mModule;
+						cmd += ";";
+						cmd += mModule;
+						cmd += ".execute('";
                         cmd += data.c_str();
                         cmd += "');";
                         MGlobal::executePythonCommandOnIdle(cmd, true);
@@ -107,8 +118,10 @@ public:
         printf("Thread function complete\n");
     }
 
-    int start(int port)
+    int start(int port, MString module)
     {
+		mModule = module;
+
         if( server != NULL)
         {
             MGlobal::displayError("Server already running.");

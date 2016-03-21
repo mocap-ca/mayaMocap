@@ -1,5 +1,6 @@
 #include "threadedDevice.h"
-
+#include "udpSocket.h"
+#include "item.h"
 
 #include <maya/MPlug.h>
 #include <maya/MDataBlock.h>
@@ -12,15 +13,54 @@
 #include <maya/MString.h>
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MThreadAsync.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnEnumAttribute.h>
+
+
+
+
+#include <iostream>
 
 // for sleep
 #include <chrono>
 #include <thread>
 
-#include "item.h"
+
 #include <vector>
 #include <string>
 
+
+/*
+Usage:
+import maya.cmds as m
+m.loadPlugin('C:/cpp/git/github/mayaMocap/plugin/build_vs2015/x64/Debug/build_vs2015.mll')
+x = m.createNode('peelRealtimeMocap')
+loc = m.spaceLocator()
+m.connectAttr( x + ".mocap[0].outputTranslate", loc[0] + ".t")
+m.connectAttr( x + ".mocap[0].outputRotate", loc[0] + ".r")
+m.setAttr( x+ ".live", 1)
+*/
+
+
+#ifdef _WIN32
+
+#include "pipeDevice.h"
+#define PIPENAME _T("\\\\.\\pipe\\vrmocap")
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <Windows.h>
+#include <tchar.h>
+
+#endif
+
+
+
+#define DEFAULT_PORT 9119
+#define DEFAULT_CMDPORT 9120
+
+
+MObject ThreadedDevice::fileName;
+MObject ThreadedDevice::save;
 
 MObject ThreadedDevice::mocap;
 MObject ThreadedDevice::outputName;
@@ -29,6 +69,10 @@ MObject ThreadedDevice::outputRotate;
 
 MObject ThreadedDevice::info;
 
+MObject ThreadedDevice::port;
+MObject ThreadedDevice::mode;
+
+MTypeId ThreadedDevice::id(0x001126D1);
 
 #define MCONT(s, msg) if( s != MS::kSuccess) { s.perror(msg); continue; }
 #define MCHECKERROR(x, msg) { if(x!=MS::kSuccess) { x.perror(msg); return x;} }
@@ -37,6 +81,13 @@ MObject ThreadedDevice::info;
 
 void ThreadedDevice::postConstructor()
 {
+	fp = NULL;
+	iPort = -1;
+	mMode = -1;
+#ifdef _WIN32
+	hPipe = INVALID_HANDLE_VALUE;
+#endif
+
     MObjectArray oArray;
     oArray.append( ThreadedDevice::mocap );
     setRefreshOutputAttributes(oArray);
@@ -69,6 +120,33 @@ void ThreadedDevice::sendData(const char *message, size_t msglen, const char *da
         // Overflow
         return;
     }
+
+	if (mSave)
+	{
+		if (fp == NULL)
+		{
+			fp = fopen(mFileName.asChar(), "wb");
+		}
+
+		if (fp != NULL)
+		{
+			size_t header[3];
+			header[0] = 0x2337;
+			header[1] = msglen;
+			header[2] = datalen;
+			fwrite(&header, sizeof(size_t), 3, fp);
+			fwrite(message, msglen, 1, fp);
+			fwrite(data, datalen, 1, fp);
+		}
+	}
+	else
+	{
+		if (fp != NULL)
+		{
+			fclose(fp);
+			fp = NULL;
+		}
+	}
 
     MCharBuffer buffer;
     status = acquireDataStorage(buffer);
@@ -169,6 +247,153 @@ void ThreadedDevice::threadShutdownHandler()
     setDone(true);
 }
 
+
+
+
+bool ThreadedDevice::connect()
+{
+
+	if ( mMode == MODE_UDP)
+	{
+		if (socket.isConnected()) return true;
+
+		if (iPort < 1024)
+		{
+			fprintf(stderr, "Invalid port: %d\n", iPort);
+			sendData("Invalid Port");
+			return false;
+		}
+
+		if (!socket.bind(iPort))
+		{
+			fprintf(stderr, "Cannot connect\n");
+			sendData("Cannot connect");
+			return false;
+		}
+
+		return true;
+	}
+
+#ifdef _WIN32
+	if ( mMode == MODE_PIPE)
+	{
+		if (hPipe != INVALID_HANDLE_VALUE) return true;
+
+		hPipe = CreateNamedPipe(PIPENAME, PIPE_ACCESS_INBOUND, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, 1, 0, 1024, 50, NULL);
+
+		if (hPipe == INVALID_HANDLE_VALUE)
+		{
+			TCHAR buf[1024];
+			FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, GetLastError(), 0, buf, 1024 * sizeof(TCHAR), 0);
+			sendData(buf);
+			printf("Could not create pipe: %s", buf);
+			return false;
+		}
+		return true;
+	}
+#endif
+}
+
+
+
+bool ThreadedDevice::isConnected()
+{
+	if ( mMode == MODE_UDP)
+	{
+		return socket.isConnected();
+	}
+
+#ifdef _WIN32
+	if ( mMode == MODE_PIPE)
+	{
+		return hPipe != INVALID_HANDLE_VALUE;
+	}
+#endif
+}
+
+bool ThreadedDevice::disconnect()
+{
+	if (mMode == MODE_UDP)
+	{
+		socket.close();
+		return true;
+	}
+
+#ifdef _WIN32
+	if (mMode == MODE_PIPE)
+	{
+		if (hPipe != INVALID_HANDLE_VALUE) CloseHandle(hPipe);
+		hPipe = INVALID_HANDLE_VALUE;
+		return true;
+	}
+#endif
+
+	
+}
+
+size_t ThreadedDevice::receiveData(char *data, size_t buflen)
+{
+	if (mMode == MODE_UDP)
+	{
+		int ret = socket.receive();  // get the data, or timeout
+									 //int ret = socket.stub();
+		if (ret == -1) return -1;  // error
+		if (ret == 0) return 0; // timeout
+
+		char buf[128];
+		//std::cout << "Listening on port: " << iPort;
+		if (socket.buflen > buflen)
+		{
+			fprintf(stderr, "Buffer overflow\n");
+			return -1;
+		}
+		memcpy(data, socket.readBuffer, socket.buflen);
+
+		return socket.buflen;
+	}
+
+#ifdef _WIN32
+	if (mMode == MODE_PIPE)
+	{
+		// Should send a message if return <= 0
+
+		DWORD len = buflen;
+		BOOL ret = ReadFile(hPipe, data, 1024, &len, NULL);
+		if (ret) return len;
+
+		DWORD err = GetLastError();
+
+		if (err == ERROR_PIPE_LISTENING)
+		{
+			// Other end has not opened
+			sendData("Listening");
+			return 0;
+		}
+
+		if (err == ERROR_BROKEN_PIPE)
+		{
+			CloseHandle(hPipe);
+			hPipe = INVALID_HANDLE_VALUE;
+			sendData("No Connection");
+			return 0;
+		}
+
+		TCHAR buf[1024];
+		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, err, 0, buf, 1024 * sizeof(TCHAR), 0);
+		printf("%s", buf);
+
+		sendData(buf);
+
+		return -1;
+	}
+
+
+#endif
+}
+
+
+
+
 MStatus ThreadedDevice::initialize()
 {
         MStatus status;
@@ -176,6 +401,26 @@ MStatus ThreadedDevice::initialize()
         MFnCompoundAttribute  cAttr;
         MFnTypedAttribute     tAttr;
         MFnMessageAttribute   mAttr;
+		MFnEnumAttribute      eAttr;
+
+
+
+		// port
+		port = numAttr.create("port", "p", MFnNumericData::kInt, DEFAULT_PORT, &status);
+		status = addAttribute(port);
+
+		attributeAffects(port, mocap);
+
+		// Mode 
+		mode = eAttr.create("mode", "m", 0, &status);
+		eAttr.addField("UDP", 0);
+#ifdef _WIN32
+		eAttr.addField("PIPE", 1);
+#endif
+
+		MCHECKERROR(status, "creating mode attribute");
+		status = addAttribute(mode);
+		MCHECKERROR(status, "adding mode attribute");
 
         // Info 
         info = tAttr.create("info", "ifo", MFnData::kString, MObject::kNullObj, &status);
@@ -188,20 +433,32 @@ MStatus ThreadedDevice::initialize()
         status = addAttribute(info);
         MCHECKERROR(status, "add info");
 
+		// save file name
+		fileName = tAttr.create("fileName", "fn", MFnData::kString, MObject::kNullObj, &status);
+		status = addAttribute(fileName);
+		if (!status) perror("Adding filename");
+
+		// save data (bool)
+		save = numAttr.create("save", "sv", MFnNumericData::kBoolean, 0);
+		status = addAttribute(save);
+		if (!status) perror("Adding save");
 
         // Name 
         outputName = tAttr.create("name", "n", MFnData::kString, MObject::kNullObj, &status);
         status = addAttribute(outputName);
+		if (!status) perror("Adding name");
 
         // Translate 
         outputTranslate  = numAttr.create("outputTranslate", "ot", MFnNumericData::k3Float, 0.0, &status);
         numAttr.setWritable(false);
         status = addAttribute(outputTranslate);
+		if (!status) perror("Adding output translate");
 
         // Rotate 
         outputRotate  = numAttr.create("outputRotate", "orot", MFnNumericData::k3Float, 0.0, &status);
         numAttr.setWritable(false);
         status = addAttribute(outputRotate);
+		if (!status) perror("Adding output rotate");
 
         // Parent "Mocap" attribute (array)
         mocap = cAttr.create("mocap", "mc", &status);
@@ -217,6 +474,9 @@ MStatus ThreadedDevice::initialize()
         attributeAffects( mocap, outputTranslate );
         attributeAffects( mocap, outputRotate );
 
+		attributeAffects(save, outputTranslate);
+		attributeAffects(fileName, outputTranslate);
+
 
         return MS::kSuccess;
 }
@@ -227,14 +487,41 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
 {
     MStatus status;
 
-    printf("Compute: %s\n", plug.name().asChar() );
+	MObject thisNode = thisMObject();
 
+#ifdef _DEBUG
+    printf("Compute: %s\n", plug.name().asChar() );
+#endif
+
+	// Lock info
     MPlug pInfo( thisMObject(), info);
     pInfo.setLocked(true);
 
-        
-    MObject thisNode = thisMObject();
+	// Port 
+	MDataHandle hPort = block.inputValue(port, &status);
+	MCHECKERROR(status, "getting port data");
+	iPort = hPort.asInt();
 
+	// mode
+	MDataHandle hMode = block.inputValue(mode, &status);
+	MCHECKERROR(status, "getting mode data");
+	mMode = hMode.asInt();
+
+	// save (bool)
+	MDataHandle hSave = block.inputValue(save, &status);
+	MCHECKERROR(status, "getting save plug data");
+	if (status && hSave.asBool())
+	{
+		MDataHandle hFileName = block.inputValue(fileName);
+		mFileName = hFileName.asString();
+		hFileName.setClean();
+		
+		mSave = true;
+	}
+	else
+	{
+		mSave = false;
+	}
 
     // Get an entry
     MCharBuffer buffer;
@@ -256,7 +543,14 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
     if( msglen != 0)
     {
         MDataHandle infoHandle = block.outputValue( info, &status );
-        infoHandle.set( MString( message, msglen ) );
+		if (status)
+		{
+			infoHandle.set(MString(message, msglen));
+		}
+		else
+		{
+			status.perror("setting info");
+		}
     }
 
     if( datalen != 0)
