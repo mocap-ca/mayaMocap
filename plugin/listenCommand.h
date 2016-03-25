@@ -13,6 +13,8 @@ static const char* closeFlag     = "-c";
 static const char* closeFlagLong = "-close";
 static const char* moduleFlag    = "-m";
 static const char* moduleFlagLong = "-module";
+static const char* queryFlag    = "-q";
+static const char* queryFlagLong = "-query";
 
 
 class ListenCommand : public MPxCommand
@@ -30,9 +32,10 @@ public:
     static void* creator() { return new ListenCommand; }
 
 private :
-    int port;
+    unsigned int port;
     bool create;
     bool close;
+    bool query;
 	MString module;
 };
 

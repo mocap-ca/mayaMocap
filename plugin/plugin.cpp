@@ -11,7 +11,10 @@
 #include "threadedDevice.h"
 #include "listenCommand.h"
 #include "pingCommand.h"
+
+#ifdef _WIN32
 #include "meshNode.h"
+#endif
 
 MStatus initializePlugin( MObject obj )
 {
@@ -27,9 +30,10 @@ MStatus initializePlugin( MObject obj )
 	status = plugin.registerCommand( "mocapPing", PingCommand::creator, PingCommand::newSyntax);
 	if(!status) { status.perror("failed to register ping command"); }
 
+#ifdef _WIN32
 	status = plugin.registerNode("MocapMesh", MocapMesh::id, &MocapMesh::creator, MocapMesh::initialize);
 	if(status != MS::kSuccess) { status.perror("Could not register node");}
-
+#endif
 
 	return status;
 }
@@ -47,8 +51,10 @@ MStatus uninitializePlugin( MObject obj )
 	status = plugin.deregisterCommand( "mocapPing" );
 	if( !status) { status.perror( "failed to deregister mocap ping command"); }
 
+#ifdef _WIN32
 	status = plugin.deregisterNode(MocapMesh::id);
 	if(status != MS::kSuccess) { status.perror("Could not deregister node");}
+#endif
 
 	return status;
 }

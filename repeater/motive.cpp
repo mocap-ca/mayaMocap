@@ -100,7 +100,14 @@ void Motive::initialize(QString local,
 
 int Motive::doConnect()
 {
-    if(natNetClient == NULL) return -1;
+
+    if(natNetClient == NULL)
+    {
+        natNetClient = new NatNetClient(1);
+    }
+
+
+
 
     if(mConnected)
     {
