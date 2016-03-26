@@ -43,7 +43,7 @@ endif
 EXTENSION=bundle
 PLATFORM_INCLUDES = -I/usr/include/c++/4.2.1
 MAYA_LFLAGS = -F/System/Library/Frameworks -framework AGL -framework OpenGL  -stdlib=libstdc++ -lstdc++ 
-MAYA_CFLAGS = -Wno-switch-enum -Wno-switch  -stdlib=libstdc++
+MAYA_CFLAGS = -Wno-switch-enum -Wno-switch  -stdlib=libstdc++ -I$(MAYADIR)/devkit/include
 
 endif
 
