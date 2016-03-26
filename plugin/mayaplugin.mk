@@ -36,16 +36,36 @@ UNAME    = $(shell uname)
 
 ifeq ($(UNAME), Darwin)
 
+CC                      = gcc-4.2
+C++                     = g++-4.2
+LD                      = g++-4.2
+
 ifndef MAYADIR
 MAYADIR = /Applications/Autodesk/maya$(MAYA_RELEASE)
 endif
 
 EXTENSION=bundle
 PLATFORM_INCLUDES = -I/usr/include/c++/4.2.1
-MAYA_LFLAGS = -F/System/Library/Frameworks -framework AGL -framework OpenGL  -stdlib=libstdc++ -lstdc++ 
-MAYA_CFLAGS = -Wno-switch-enum -Wno-switch  -stdlib=libstdc++ -I$(MAYADIR)/devkit/include
+
+MAYA_LFLAGS          =   -fno-gnu-keywords -fpascal-strings  \
+                                -isysroot /Developer/SDKs/MacOSX10.6.sdk \
+                                -headerpad_max_install_names \
+                                -framework System -framework SystemConfiguration \
+                                -framework CoreServices -framework Carbon \
+                                -framework Cocoa -framework ApplicationServices \
+                                -framework IOKit \
+                                -bundle \
+				-L$(MAYADIR)/Maya.app/Contents/MacOS
+
+MAYA_CFLAGS          = -DCC_GNU_ -DOSMac_ -DOSMacOSX_ -DREQUIRE_IOSTREAM\
+                                -DOSMac_MachO_ -O3 $(ARCH_FLAGS)  -D_LANGUAGE_C_PLUS_PLUS \
+                                -include "$(MAYADIR)/devkit/include/maya/OpenMayaMac.h" \
+				-I$(MAYADIR)/devkit/include
+
+MAYA_C++FLAGS        = $(CFLAGS) $(WARNFLAGS) $(ERROR_FLAGS) -fno-gnu-keywords -fpascal-strings
 
 endif
+#### end osx
 
 #####################
 ### LINUX OPTIONS ###
@@ -55,6 +75,7 @@ ifeq ($(UNAME), Linux)
 
 # MAYA_DIR may be seting localsettings.mak
 ifndef MAYADIR
+
 ifeq ($(MAYA_RELEASE), 2016)
 MAYADIR = /usr/autodesk/maya$(MAYA_RELEASE)
 else
@@ -63,8 +84,8 @@ endif
 
 endif
 
-MAYA_CFLAGS = -fPIC -pthread -pipe -D_BOOL -DREQUIRE_IOSTREAM -DLINUX -fno-gnu-keywords -Wno-deprecated -I$(MAYADIR)/include
-MAYA_LFLAGS  = -shared  #-Wl,-Bsymbolic
+MAYA_C++FLAGS = -fPIC -pthread -pipe -D_BOOL -DREQUIRE_IOSTREAM -DLINUX -fno-gnu-keywords -Wno-deprecated -I$(MAYADIR)/include
+MAYA_LFLAGS  = -shared  #-Wl,-Bsymbolic -L$(MAYADIR)/lib
 
 MAYA_LIBS = -lFoundation -lOpenMaya -lOpenMayaAnim -lOpenMayaFX -lOpenMayaRender -lOpenMayaUI
 MAYA_LIBS_DIR = $(MAYADIR)/lib
@@ -75,7 +96,7 @@ EXTENSION=mll
 MY_LFLAGS = -L$(MAYADIR)/lib -lGL
 
 endif
-
+#### END LINUX
 
 CC=gcc
 C++=g++
@@ -114,7 +135,7 @@ PLUGIN_OBJ   = $(PLUGIN_SRC:%.cpp=$(BUILDDIR)/plugin/%.o)
 $(PLUGIN) : directories $(PLUGIN_OBJ)  $(PLUGIN_SRC) $(HEADER_SRC) 
 	@echo "======================================="
 	@echo Building Plugin 
-	$(LD) -o $@ $(PLUGIN_OBJ) $(MAYA_LFLAGS) $(MAYA_LIBS) $(MAYA_CFLAGS) -L$(MAYADIR)/lib
+	$(LD) -o $@ $(PLUGIN_OBJ) $(MAYA_LFLAGS) $(MAYA_LIBS) 
 
 
 directories : $(BUILDDIR) $(BUILDDIR)/plugin
@@ -131,7 +152,7 @@ $(BUILDDIR)/plugin/%.o : %.cpp
 	@echo CFLAGS: $(CFLAGS)
 	@echo MAYA CFLAGS: $(MAYA_CFLAGS)
 	@echo RELEASE: plugin$(MAYA_RELEASE): $@
-	$(CXX) -o $@ -c $(MAYA_CFLAGS) $(CFLAGS) $<
+	$(CXX) -o $@ -c $(MAYA_C++FLAGS) $(CFLAGS) $<
 
 
 # ends if/else maya version selection

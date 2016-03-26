@@ -5,6 +5,8 @@
 
 #include "item.h"
 
+using namespace peel;
+
 #define BUFSIZE 9200
 
 // Wrap the unix socket funcions in to a simple class

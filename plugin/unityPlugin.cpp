@@ -1,6 +1,8 @@
 #include "unityPlugin.h"
 #include "item.h"
 
+using namespace peel;
+
 #include <vector>
 #include <Windows.h>
 

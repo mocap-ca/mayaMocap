@@ -4,12 +4,13 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-Item::Item( const char * name_)
+
+peel::Item::Item( const char * name_)
 {
     strcpy(name, name_);
 }
 
-Segment::Segment( const char *name_, float tx_, float ty_, float tz_,
+peel::Segment::Segment( const char *name_, float tx_, float ty_, float tz_,
                         float rx_, float ry_, float rz_, float rw_ )
     : Item(name_)
 {
@@ -22,7 +23,7 @@ Segment::Segment( const char *name_, float tx_, float ty_, float tz_,
         rw = rw_;
 }
 
-Marker::Marker( const char *name_, float tx_, float ty_, float tz_ )
+peel::Marker::Marker( const char *name_, float tx_, float ty_, float tz_ )
     : Item(name_)
 {
         tx = tx_;
@@ -31,7 +32,7 @@ Marker::Marker( const char *name_, float tx_, float ty_, float tz_ )
 }
 
 
-size_t serializeItems( std::vector<Item*> &items,  char *buffer, size_t buflen)
+size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, size_t buflen)
 {
     char *ptr = buffer;
 
@@ -44,8 +45,8 @@ size_t serializeItems( std::vector<Item*> &items,  char *buffer, size_t buflen)
     {
 
         Item *item = items[i];
-        Segment *segment = dynamic_cast<Segment*>( item );
-        Marker  *marker  = dynamic_cast<Marker*> ( item );
+        Segment *segment = dynamic_cast<peel::Segment*>( item );
+        Marker  *marker  = dynamic_cast<peel::Marker*> ( item );
 
         if( segment != NULL)
         {
@@ -97,7 +98,7 @@ size_t serializeItems( std::vector<Item*> &items,  char *buffer, size_t buflen)
 
 
 
-size_t parseItems(const char *buffer, size_t len, std::vector<Item*> *items )
+size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*> *items )
 {
     if( len < 3) return 0;
 
@@ -194,7 +195,7 @@ size_t parseItems(const char *buffer, size_t len, std::vector<Item*> *items )
 
 
 
-void dumpData( const char *buffer) 
+void peel::dumpData( const char *buffer) 
 {
     if(buffer[0] != 42 )
     {

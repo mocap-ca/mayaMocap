@@ -293,6 +293,8 @@ bool ThreadedDevice::connect()
 		return true;
 	}
 #endif
+
+	return false;
 }
 
 
@@ -310,6 +312,7 @@ bool ThreadedDevice::isConnected()
 		return hPipe != INVALID_HANDLE_VALUE;
 	}
 #endif
+	return false;
 }
 
 bool ThreadedDevice::disconnect()
@@ -328,6 +331,8 @@ bool ThreadedDevice::disconnect()
 		return true;
 	}
 #endif
+
+	return false;
 
 	
 }
@@ -388,8 +393,8 @@ size_t ThreadedDevice::receiveData(char *data, size_t buflen)
 		return -1;
 	}
 
-
 #endif
+	return -1;
 }
 
 
@@ -583,8 +588,8 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
             MDataHandle tHandle = tPlug.constructHandle(block);
             MCHECKERROR(status, "Creating translation handle");
 
-            Marker  *marker  = dynamic_cast<Marker*> (*i);
-            Segment *segment = dynamic_cast<Segment*> (*i);
+            peel::Marker  *marker  = dynamic_cast<peel::Marker*> (*i);
+            peel::Segment *segment = dynamic_cast<peel::Segment*> (*i);
 
             float3& otrans = tHandle.asFloat3();
 

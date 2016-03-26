@@ -15,11 +15,13 @@ message is formatted as a series of string encoded floats, seperated by '0'
 */
 
 
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <vector>
+
+namespace peel {
+
 // Item struct for passing data from thread
 
 class Item
@@ -69,4 +71,5 @@ void dumpData( const char *buffer) ;
 
 size_t parseItems(const char *buffer, size_t len, std::vector<Item*> *items );
 
+}
 #endif // ITEM_H
