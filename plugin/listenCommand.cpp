@@ -10,7 +10,8 @@ MSyntax ListenCommand::newSyntax()
     MSyntax s;
     s.addFlag(portFlag,  portFlagLong , MSyntax::kUnsigned );
     s.addFlag(closeFlag, closeFlagLong );
-	s.addFlag(moduleFlag, moduleFlagLong);
+    s.addFlag(queryFlag, queryFlagLong );
+	s.addFlag(moduleFlag, moduleFlagLong, MSyntax::kString);
     return s;
 
 }
@@ -22,15 +23,22 @@ MStatus ListenCommand::doIt( const MArgList &args )
 
     MArgDatabase db(syntax(), args);
 
-    port = 0;
+    port   = 0;
     create = false;
-    close = false;
+    close  = false;
+    query  = false;
 	module = "";
+
+    if (db.isFlagSet(queryFlag) )
+    {
+        query = true;
+    }
 
 	if (db.isFlagSet(portFlag))
 	{
 		status = db.getFlagArgument(portFlag, 0, port);
 		if (status) { create = true; }
+        else { status.perror("getting port"); }
 	}
 	
 	if (db.isFlagSet(moduleFlag))
@@ -49,6 +57,18 @@ MStatus ListenCommand::doIt( const MArgList &args )
 
 MStatus ListenCommand::redoIt()
 {
+    if( query ) 
+    {
+        if(listener.running)
+        {  
+            setResult(listener.mPort);
+        }
+        else
+        {
+            setResult(-1);
+        }
+
+    }
     if( create && close )
     {
         MGlobal::displayError("Create or close - not both");

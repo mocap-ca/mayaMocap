@@ -20,12 +20,6 @@
 
 
 #include <iostream>
-
-// for sleep
-#include <chrono>
-#include <thread>
-
-
 #include <vector>
 #include <string>
 
@@ -47,13 +41,17 @@ m.setAttr( x+ ".live", 1)
 #include "pipeDevice.h"
 #define PIPENAME _T("\\\\.\\pipe\\vrmocap")
 #define _CRT_SECURE_NO_WARNINGS
+#define SLEEP Sleep
 
 #include <Windows.h>
 #include <tchar.h>
 
+#else
+
+#include <unistd.h>
+#define SLEEP usleep 
+
 #endif
-
-
 
 #define DEFAULT_PORT 9119
 #define DEFAULT_CMDPORT 9120
@@ -78,6 +76,9 @@ MTypeId ThreadedDevice::id(0x001126D1);
 #define MCHECKERROR(x, msg) { if(x!=MS::kSuccess) { x.perror(msg); return x;} }
 
 #define BUFSIZE 9200
+
+
+
 
 void ThreadedDevice::postConstructor()
 {
@@ -212,7 +213,7 @@ void ThreadedDevice::threadHandler()
 			// Connect should send a status message
             this->connect();
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            SLEEP(500);
 
 			continue;
         }
@@ -225,7 +226,7 @@ void ThreadedDevice::threadHandler()
 			size_t sz = this->receiveData(buffer, BUFSIZE);
 			if (sz == -1) break;
 			if (sz == 0) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));				
+                SLEEP(500);
 				continue;
 			}
 			if(sz > 0) sendData( "Receiving", 0, buffer, sz);

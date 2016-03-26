@@ -111,6 +111,7 @@ public:
         // Close open connections
         for( std::list<TcpSocket*>::iterator i = connections.begin(); i != connections.end(); i++)
         {
+            (*i)->close();
             delete *i;
         }
         delete server;

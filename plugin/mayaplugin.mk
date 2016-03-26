@@ -25,7 +25,7 @@ else
 -include localsettings.mak
 
 # set to 1 for debug build
-DEBUG = 1
+DEBUG = 0
 
 # determine os
 UNAME    = $(shell uname)
