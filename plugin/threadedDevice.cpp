@@ -17,8 +17,6 @@
 #include <maya/MFnEnumAttribute.h>
 
 
-
-
 #include <iostream>
 #include <vector>
 #include <string>
@@ -53,7 +51,7 @@ m.setAttr( x+ ".live", 1)
 
 #endif
 
-#define DEFAULT_PORT 9119
+#define DEFAULT_PORT    9119
 #define DEFAULT_CMDPORT 9120
 
 
@@ -292,6 +290,8 @@ bool ThreadedDevice::connect()
 		}
 		return true;
 	}
+
+
 #endif
 
 	return false;
@@ -419,9 +419,9 @@ MStatus ThreadedDevice::initialize()
 
 		// Mode 
 		mode = eAttr.create("mode", "m", 0, &status);
-		eAttr.addField("UDP", 0);
+		eAttr.addField("UDP", MODE_UDP);
 #ifdef _WIN32
-		eAttr.addField("PIPE", 1);
+		eAttr.addField("PIPE", MODE_PIPE);
 #endif
 
 		MCHECKERROR(status, "creating mode attribute");

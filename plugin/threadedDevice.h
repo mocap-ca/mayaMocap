@@ -10,9 +10,9 @@
 #include <Windows.h>
 #endif
 
-#define MODE_UDP   0
-#define MODE_PIPE  1
-
+#define MODE_UDP    0
+#define MODE_PIPE   1
+#define MODE_MOTIVE 2
 
 class ThreadedDevice : public MPxThreadedDeviceNode
 {
