@@ -80,13 +80,15 @@ void Motive::frameInfo(int frame, QString tcs)
     label->setText(QString("%1 %2").arg(frame).arg(tcs));
 }
 
-void Motive::initialize(QString local,
+void Motive::initialize(bool multicast,
+                   QString local,
                    QString remote,
                    int commandPort,
                    int dataPort,
                    QString udpTarget,
                    int     udpPort )
 {
+    mMulticast   = multicast;
     mLocal       = local;
     mRemote      = remote;
     mCommandPort = commandPort;
@@ -103,7 +105,7 @@ int Motive::doConnect()
 
     if(natNetClient == NULL)
     {
-        natNetClient = new NatNetClient(1);
+        natNetClient = new NatNetClient(mMulticast ? 0 : 1);
     }
 
 
@@ -265,13 +267,13 @@ void Motive::dataCallback( sFrameOfMocapData *data )
 
     if(mUdpServer.length() > 0 && mUdpPort > 0 )
     {
-        std::vector<Item*> items;
+        std::vector<peel::Item*> items;
 
         // Send each rigidbody as a datagram
         for(size_t i=0; i < data->nRigidBodies; i++)
         {
             const sRigidBodyData &rbd = data->RigidBodies[i];
-            items.push_back( new Segment(rbDesc[rbd.ID].toUtf8().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+            items.push_back( new peel::Segment(rbDesc[rbd.ID].toUtf8().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
         }
 
         /*for(size_t i=0; i < data->nLabeledMarkers; i++)
@@ -289,7 +291,7 @@ void Motive::dataCallback( sFrameOfMocapData *data )
             {
                 const sRigidBodyData &rbd = skel.RigidBodyData[j];
                 QString name = skelDesc[ rbd.ID ];
-                items.push_back( new Segment(name.toUtf8().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+                items.push_back( new peel::Segment(name.toUtf8().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
             }
         }
 

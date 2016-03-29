@@ -120,7 +120,7 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
     {
 
         char id = *(ptr++);
-        if (id != 43 && id != 44)
+        if (id != 43 && id != 44 && id != 45)
         {
             fprintf(stderr, "Invalid packet entry %02X, expected %02x or %02x\n", id, 43, 44);
             return 0;
@@ -169,6 +169,8 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
         {
             Marker *marker = new Marker();
 
+		    
+
             // Name
             memcpy(marker->name, name, namelen);
             marker->name[namelen] = 0;
@@ -185,6 +187,40 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
             items->push_back(marker);
 
         }
+
+		if (id == 45)
+		{
+			char tmp[64];
+			memcpy(tmp, data, datalen);
+			tmp[datalen] = 0;
+
+			float f1 = 0.0f;
+			float f2 = 0.0f;
+			int ret = sscanf(tmp, "%f %f", &f1, &f2);
+
+			if (ret == 2)
+			{
+				Marker *marker = new Marker();
+
+
+
+
+				// Name
+				memcpy(marker->name, name, namelen);
+				marker->name[namelen] = 0;
+
+				marker->tx = f1;
+				marker->ty = f2;
+				marker->tz = 0.0f;
+
+				items->push_back(marker);
+
+			}
+
+
+
+		}
+		
 
 
 

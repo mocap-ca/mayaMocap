@@ -6,9 +6,9 @@
 
 
 #NatNet
-NATNETDIR=H:/cpp/natnet
+NATNETDIR=C:/cpp/api/NatNetSDK
 INCLUDEPATH += src $${NATNETDIR}/include ../../mayaThreadedDevice  ../plugin
-LIBS += -L$${NATNETDIR}/lib/x64 -lNatNetLibStatic
+LIBS += -L$${NATNETDIR}/lib/x64 -lNatNetLib
 
 LIBS += -lWs2_32 -lsetupapi
 

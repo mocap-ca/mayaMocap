@@ -13,13 +13,20 @@ const char * PingCommand::ipArgLong   = "-ipAddress";
 const char * PingCommand::msgArg      = "-msg";
 const char * PingCommand::msgArgLong  = "-message";
 
-MSyntax PingCommand::newSyntax() 
+MSyntax PingCommand::newSyntax()
 {
-    MSyntax s;
-    s.addFlag(portArg, portArgLong, MSyntax::kUnsigned );
-    s.addFlag(ipArg,   ipArgLong,   MSyntax::kString );
-    s.addFlag(msgArg,  msgArgLong,  MSyntax::kString );
-    return s;
+	MSyntax s;
+	MStatus stat;
+	stat = s.addFlag(portArg, portArgLong, MSyntax::kLong);
+	if (!stat) { MGlobal::displayError("Error Adding port");  stat.perror("setting port flag"); return s; }
+
+	stat = s.addFlag(ipArg,   ipArgLong,   MSyntax::kString );
+	if (!stat) { MGlobal::displayError("Error Adding ip");  stat.perror("setting ip flag"); return s; }
+
+	stat = s.addFlag(msgArg,  msgArgLong,  MSyntax::kString );
+	if (!stat) { MGlobal::displayError("Error Adding msg");  stat.perror("setting msg flag"); return s; }
+
+	return s;
 }
 
 
@@ -28,7 +35,8 @@ MStatus PingCommand::doIt( const MArgList &args )
     MStatus status;
 
     MArgDatabase db(syntax(), args);
-
+	
+	/*
     unsigned int l = args.length();
 
     for(unsigned i = 0; i < l; i++)
@@ -37,14 +45,14 @@ MStatus PingCommand::doIt( const MArgList &args )
         args.get(i, s);
         MGlobal::displayInfo(s);
     }
-
+	*/
     port = 0;
 
     if( db.isFlagSet( portArg   ) )
     {
          db.getFlagArgument( portArg,  0,  port );
     }
-    if( db.isFlagSet( ipArg     ) ) 
+	if( db.isFlagSet( ipArg     ) ) 
     {
          db.getFlagArgument( ipArg,    0,  ip );
     }

@@ -18,7 +18,9 @@ MainWindow::MainWindow(QWidget *parent) :
         sd.getIF().toString(),
         sd.getRemote(),
         sd.getCommandPort(),
-        sd.getDataPort());
+        sd.getDataPort(),
+        sd.getUdpHost().toString(),
+        sd.getUdpPort());
 
     QPair< QString, int> mayaVal;
     mayaVal.first = sd.getMayaHost().toString();
@@ -30,7 +32,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->maya->setName("maya");
     ui->maya->initialize( mayaVal );
 
-    ui->motive->setUdp( sd.getUdpHost(), sd.getUdpPort() );
 
     if(ui->motive->doConnect() == 0)
     {

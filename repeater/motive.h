@@ -24,7 +24,7 @@ class Motive : public QWidget
 public:
     explicit Motive(QWidget *parent = 0);
     ~Motive();
-    void initialize(QString local, QString remote, int commandPort, int dataPort, QString udpTarget, int udpPort);
+    void initialize(bool multicast, QString local, QString remote, int commandPort, int dataPort, QString udpTarget, int udpPort);
     void getDescriptions();
     int doConnect();
     void doDisconnect();
@@ -59,6 +59,7 @@ public:
 private:
     int sendMessage(QString message);
 
+    bool    mMulticast;
     NatNetClient *natNetClient;
     QString mLocal;
     QString mRemote;
