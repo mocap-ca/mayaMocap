@@ -43,6 +43,7 @@ public:
 	static MObject      fileName;
 	static MObject      save;
     static MObject      mocap;
+	static MObject      scale;
     static MObject      outputName;
     static MObject      outputTranslate;
     static MObject      outputRotate;

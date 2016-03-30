@@ -59,6 +59,7 @@ MObject ThreadedDevice::fileName;
 MObject ThreadedDevice::save;
 
 MObject ThreadedDevice::mocap;
+MObject ThreadedDevice::scale;
 MObject ThreadedDevice::outputName;
 MObject ThreadedDevice::outputTranslate;
 MObject ThreadedDevice::outputRotate;
@@ -439,32 +440,42 @@ MStatus ThreadedDevice::initialize()
         status = addAttribute(info);
         MCHECKERROR(status, "add info");
 
+		scale = numAttr.create("scale", "sc", MFnNumericData::kFloat, 1.0, &status);
+		MCHECKERROR(status, "creating scale");
+		status = addAttribute(scale);
+		MCHECKERROR(status, "adding scale");
+
 		// save file name
 		fileName = tAttr.create("fileName", "fn", MFnData::kString, MObject::kNullObj, &status);
+		MCHECKERROR(status, "creating filename");
 		status = addAttribute(fileName);
-		if (!status) perror("Adding filename");
+		MCHECKERROR(status, "adding filename");
 
 		// save data (bool)
-		save = numAttr.create("save", "sv", MFnNumericData::kBoolean, 0);
+		save = numAttr.create("save", "sv", MFnNumericData::kBoolean, 0, &status);
+		MCHECKERROR(status, "creating save");
 		status = addAttribute(save);
-		if (!status) perror("Adding save");
+		MCHECKERROR(status, "adding creating save");
 
         // Name 
         outputName = tAttr.create("name", "n", MFnData::kString, MObject::kNullObj, &status);
+		MCHECKERROR(status, "creating name");
         status = addAttribute(outputName);
-		if (!status) perror("Adding name");
+		MCHECKERROR(status, "adding name");
 
         // Translate 
         outputTranslate  = numAttr.create("outputTranslate", "ot", MFnNumericData::k3Float, 0.0, &status);
+		MCHECKERROR(status, "creating output translate");
         numAttr.setWritable(false);
         status = addAttribute(outputTranslate);
-		if (!status) perror("Adding output translate");
+		MCHECKERROR(status, "adding output translate");
 
         // Rotate 
         outputRotate  = numAttr.create("outputRotate", "orot", MFnNumericData::k3Float, 0.0, &status);
+		MCHECKERROR(status, "creating output rotate");
         numAttr.setWritable(false);
         status = addAttribute(outputRotate);
-		if (!status) perror("Adding output rotate");
+		MCHECKERROR(status, "adding output rotate");
 
         // Parent "Mocap" attribute (array)
         mocap = cAttr.create("mocap", "mc", &status);
@@ -527,6 +538,15 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
 	else
 	{
 		mSave = false;
+	}
+
+	// scale (float)
+	MDataHandle hScale = block.inputValue(scale, &status);
+	MCHECKERROR(status, "saving scale");
+	float scaleValue = 1.0f;
+	if (status)
+	{
+		scaleValue = hScale.asFloat();
 	}
 
     // Get an entry
@@ -605,9 +625,9 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
             if(marker) 
             {
 
-                otrans[0] = marker->tx;
-                otrans[1] = marker->ty;
-                otrans[2] = marker->tz;
+                otrans[0] = marker->tx * scaleValue;
+                otrans[1] = marker->ty * scaleValue;
+                otrans[2] = marker->tz * scaleValue;
                 orot[0] = 0.0f;
                 orot[1] = 0.0f;
                 orot[2] = 0.0f;
@@ -617,9 +637,9 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
 
             if (segment) 
             {
-                otrans[0] = segment->tx;
-                otrans[1] = segment->ty;
-                otrans[2] = segment->tz;
+                otrans[0] = segment->tx * scaleValue;
+                otrans[1] = segment->ty * scaleValue;
+                otrans[2] = segment->tz * scaleValue;
 
                 MQuaternion q( segment->rx, segment->ry, segment->rz, segment->rw); 
                 MEulerRotation e = q.asEulerRotation();

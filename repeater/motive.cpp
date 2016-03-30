@@ -273,7 +273,7 @@ void Motive::dataCallback( sFrameOfMocapData *data )
         for(size_t i=0; i < data->nRigidBodies; i++)
         {
             const sRigidBodyData &rbd = data->RigidBodies[i];
-            items.push_back( new peel::Segment(rbDesc[rbd.ID].toUtf8().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+            items.push_back( new peel::Segment(rbDesc[rbd.ID].toLocal8Bit().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
         }
 
         /*for(size_t i=0; i < data->nLabeledMarkers; i++)
@@ -291,7 +291,7 @@ void Motive::dataCallback( sFrameOfMocapData *data )
             {
                 const sRigidBodyData &rbd = skel.RigidBodyData[j];
                 QString name = skelDesc[ rbd.ID ];
-                items.push_back( new peel::Segment(name.toUtf8().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+                items.push_back( new peel::Segment(name.toLocal8Bit().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
             }
         }
 
