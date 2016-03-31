@@ -32,7 +32,7 @@ Motive::Motive(QWidget *parent)
     natNetClient = NULL;
 
     checkboxOnline = new QCheckBox(this);
-    buttonRb = new QPushButton("RB", this);
+    buttonRb = new QPushButton("Update", this);
     layout = new QHBoxLayout(this);
     label  = new QLabel(this);
     label2 = new QLabel(this);
@@ -44,11 +44,9 @@ Motive::Motive(QWidget *parent)
     layout->addWidget(label2, 1);
     setLayout(layout);
 
-    setEnabled(false);
 
     connect(checkboxOnline,   SIGNAL(clicked(bool)), this, SLOT(online(bool)));
     connect(buttonRb,         SIGNAL(pressed()), this, SLOT(testRb()));
-    connect(this,             SIGNAL(outFrame(int,QString)), this, SLOT(frameInfo(int, QString)));
 
     udpSocket = new QUdpSocket(this);
     
@@ -70,14 +68,25 @@ Motive::~Motive()
 void Motive::fpsEvent()
 {
     emit outFps(frameCount);
-    frameCount = 0;
-}
 
-void Motive::frameInfo(int frame, QString tcs)
-{
-    QStringList sl( rbDesc.values() );
-    label2->setText(sl.join(','));
-    label->setText(QString("%1 %2").arg(frame).arg(tcs));
+    if(frameCount == 0)
+    {
+        this->setStyleSheet("color : #f00");
+    }
+    else
+    {
+        this->setStyleSheet("");
+    }
+
+    frameCount = 0;
+
+    QStringList rbs( rbDesc.values() );
+    int skels = skelDesc.count();
+
+    label2->setText(QString( "RB: %1  SK: %2" ).arg( rbs.join(',')).arg( skels));
+    infoMutex.lock();
+    label->setText(infoMessage);
+    infoMutex.unlock();
 }
 
 void Motive::initialize(bool multicast,
@@ -96,6 +105,7 @@ void Motive::initialize(bool multicast,
 
     mUdpServer   = udpTarget;
     mUdpPort     = udpPort;
+
 }
 
 
@@ -107,9 +117,6 @@ int Motive::doConnect()
     {
         natNetClient = new NatNetClient(mMulticast ? 0 : 1);
     }
-
-
-
 
     if(mConnected)
     {
@@ -165,8 +172,10 @@ void Motive::getDescriptions()
 
     int ret = natNetClient->GetDataDescriptions(&desc);
 
+#ifdef BUG
     QFile ff(QString("C:\\Users\\amacleod\\Desktop\\desc.txt"));
     ff.open( QFile::WriteOnly );
+#endif
 
     for(size_t i=0; i < ret; i++)
     {
@@ -176,7 +185,9 @@ void Motive::getDescriptions()
 
             md = desc->arrDataDescriptions[i].Data.MarkerSetDescription;
 
+#ifdef BUG
             if(ff.isOpen()) ff.write( QString("Markerset: %1\n").arg(md->szName).toUtf8() );
+#endif
 
             char*ptr = *md->szMarkerNames;
             for( size_t  j=0; j < md->nMarkers; j++)
@@ -184,7 +195,9 @@ void Motive::getDescriptions()
                 QString name("%1_%2");
                 size_t len = strlen( ptr );
                 mkrDesc.append( name.arg(QString(md->szName)).arg( QString(ptr) ) );
+#ifdef BUG
                 if(ff.isOpen()) ff.write( QString("   Marker: %1 - %2\n").arg(j).arg(ptr).toUtf8() );
+#endif
                 ptr += len + 1;
 
             }
@@ -195,7 +208,10 @@ void Motive::getDescriptions()
             sRigidBodyDescription *rbd;
             rbd = desc->arrDataDescriptions[i].Data.RigidBodyDescription;
             rbDesc[rbd->ID] = QString(rbd->szName);
+#ifdef BUG
             if(ff.isOpen()) ff.write( QString("RB: %1 parent: %2  - %3\n").arg( rbd->ID ).arg( rbd->parentID ).arg( rbd->szName).toUtf8());
+#endif
+
         }
 
         if ( desc->arrDataDescriptions[i].type == Descriptor_Skeleton )
@@ -204,19 +220,24 @@ void Motive::getDescriptions()
             sd = desc->arrDataDescriptions[i].Data.SkeletonDescription;
             int id = sd->skeletonID;
 
+#ifdef BUG
             if(ff.isOpen()) ff.write( QString("Skel: %1  %2\n").arg( id ).arg( sd->szName ).toUtf8());
-
+#endif
             skelNames[id] = sd->szName;
 
             for ( size_t  j = 0; j < sd->nRigidBodies; j++)
             {
                 int rbid = sd->RigidBodies[j].ID | (sd->skeletonID << 16);
                 skelDesc[rbid] = QString ( sd->RigidBodies[j].szName );
+#ifdef BUG
                 if(ff.isOpen()) ff.write( QString("   RB: %1   %2\n").arg(rbid).arg( sd->RigidBodies[j].szName ).toUtf8());
+#endif
             }
         }
     }
+#ifdef BUG
     if(ff.isOpen()) ff.close();
+#endif
 }
 
 void Motive::doDisconnect()
@@ -303,16 +324,20 @@ void Motive::dataCallback( sFrameOfMocapData *data )
 
     }
 
-
     QString tcs(buf);
     int x = tcs.lastIndexOf('.');
     if(x>0) tcs = tcs.left(x);
-    if(currentTC != tcs)
+    if(currentTC != tcs && store)
     {
         label->setText(QString("%1 %2").arg(frame).arg(tcs));
         emit outFrame(frame, tcs);
         currentTC = tcs;
     }
+
+    infoMutex.lock();
+    infoMessage = QString("%1 %2").arg(frame).arg(tcs);
+    infoMutex.unlock();
+
 }
 
 void Motive::messageCallback(int id, char *msg)

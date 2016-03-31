@@ -74,17 +74,19 @@ private:
     QMap <int, QString > skelDesc;
 
     QMutex dataMutex;
+    QMutex infoMutex;
 
     QString mUdpServer;
     int     mUdpPort;
     bool    store;
+
+    QString  infoMessage;
 
 
 private slots:
     void logMessage(QString);
     void online(bool);
     void testRb();
-    void frameInfo(int, QString);
     void fpsEvent();
 
 signals:

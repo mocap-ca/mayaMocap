@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent) :
     SettingsDialog sd(this);
     sd.exec();
 
+    setWindowTitle("Repeater 0.4");
+
     ui->motive->initialize(sd.getMulticast(),
         sd.getIF().toString(),
         sd.getRemote(),
