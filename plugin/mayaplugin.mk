@@ -85,7 +85,7 @@ endif
 endif
 
 MAYA_C++FLAGS = -fPIC -pthread -pipe -D_BOOL -DREQUIRE_IOSTREAM -DLINUX -fno-gnu-keywords -Wno-deprecated -I$(MAYADIR)/include
-MAYA_LFLAGS  = -shared  #-Wl,-Bsymbolic -L$(MAYADIR)/lib
+MAYA_LFLAGS  = -shared  -Wl,-Bsymbolic -L$(MAYADIR)/lib
 
 MAYA_LIBS = -lFoundation -lOpenMaya -lOpenMayaAnim -lOpenMayaFX -lOpenMayaRender -lOpenMayaUI
 MAYA_LIBS_DIR = $(MAYADIR)/lib
