@@ -12,13 +12,18 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
     ui->lineEditCommandPort->setText("1510");
     ui->lineEditDataPort->setText("1511");
-    ui->lineEditRemote->setText("192.168.1.49");
-
-    ui->lineEditUdpHost->setText("192.168.1.22");
     ui->lineEditUdpPort->setText("9119");
-
-    ui->lineEditMayaHost->setText("192.168.1.22");
     ui->lineEditMayaPort->setText("8885");
+
+#ifdef _DEBUG
+    ui->lineEditRemote->setText("192.168.1.9");
+    ui->lineEditUdpHost->setText("192.168.1.9");
+    ui->lineEditMayaHost->setText("192.168.1.9");
+#else
+    ui->lineEditRemote->setText("192.168.1.49");
+    ui->lineEditUdpHost->setText("192.168.1.22");
+    ui->lineEditMayaHost->setText("192.168.1.22");
+#endif
 
     ui->checkBoxMulticast->setChecked(false);
 }

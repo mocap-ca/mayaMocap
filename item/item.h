@@ -20,6 +20,8 @@ message is formatted as a series of string encoded floats, seperated by '0'
 #include <stdlib.h>
 #include <vector>
 
+#define NAMELEN 255
+
 namespace peel {
 
 // Item struct for passing data from thread
@@ -30,7 +32,7 @@ public :
     Item() {}
     virtual ~Item() {}
     Item( const char *name );
-    char  name[30];
+    char  name[NAMELEN];
 
 };
 
@@ -67,7 +69,8 @@ public:
 
 size_t serializeItems( std::vector<Item*> &items,  char *buffer, size_t buflen);
         
-void dumpData( const char *buffer) ;
+void dumpData( const char *) ;
+void dumpItems(std::vector<Item*> &);
 
 size_t parseItems(const char *buffer, size_t len, std::vector<Item*> *items );
 

@@ -1,5 +1,9 @@
-#include "unityPlugin.h"
+#include "unityPipePlugin.h"
 #include "item.h"
+
+/*
+	Gets mesh data from a named pipe and passes it to a unity script
+*/
 
 using namespace peel;
 

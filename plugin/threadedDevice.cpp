@@ -94,10 +94,10 @@ void ThreadedDevice::postConstructor()
     createMemoryPools(1, BUFSIZE, 1);
 }
 
-ThreadedDevice::~ThreadedDevice()
-{
-    destroyMemoryPools();
-}
+	ThreadedDevice::~ThreadedDevice()
+	{
+		destroyMemoryPools();
+	}
 
 
 /*

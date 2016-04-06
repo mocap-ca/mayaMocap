@@ -5,6 +5,10 @@
 #include "item.h"
 #include "udpSocket.h"
 
+#ifdef _WIN32
+#pragma comment(lib, "ws2_32.lib")
+#endif
+
 bool run = true;
 
 void intHandler( int x )
@@ -15,6 +19,11 @@ void intHandler( int x )
 
 int main(int argc, char*argv[])
 {
+#ifdef _WIN32
+	WSADATA wsaData;
+	DWORD wVersionRequested = MAKEWORD(2, 2);
+	WSAStartup(wVersionRequested, &wsaData);
+#endif
 
     if( argc != 2 ) 
     {
@@ -28,12 +37,11 @@ int main(int argc, char*argv[])
 
     UdpServer server;
 
-
     if(! server.bind( port) ) return 2;
 
     printf("Listening on port: %d\n", port);
     
-    std::vector< Item > items;
+    std::vector< Item* > items;
     char buf[1024];
     int ret;
 
@@ -41,32 +49,24 @@ int main(int argc, char*argv[])
 
     while(run)
     {
-
         ret = server.receive();
         if( ret == -1 ) break;
         if( ret == 0 ) continue;
 
-            printf(".");
-            fflush(stdout);
+        printf("%d ", ret);
+        fflush(stdout);
 
-        ret = parseItems( server.readBuffer, ret,  items );
+        ret = parseItems( server.readBuffer, ret, &items );
 
-
-	// Only print every one in 24 entries.
+		// Only print every one in 24 entries.
         if( c++ > 24 )
         {
-        
-
             printf("Parse returns: %d  Items: %zu \n", ret, items.size());
-
-            for(size_t n = 0; n < items.size(); n++)
-            {
-                Item &i = items[n];
-                printf("-- %s  %f %f %f - %f %f %f %f\n",  i.name, i.tx, i.ty, i.tz, 
-                            i.rx, i.ry, i.rz, i.rw );
-            }
+			peel::dumpItems(items);
             c=0;
         }
     }
-
+#ifdef _WIN32
+	WSACleanup();
+#endif
 }

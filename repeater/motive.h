@@ -17,6 +17,8 @@
 
 #include <QUdpSocket>
 
+#define DATA_PACKET_SIZE 8194
+
 
 class Motive : public QWidget
 {
@@ -37,6 +39,10 @@ public:
     QString      currentTC;
     QUdpSocket*  udpSocket;
     QTimer*      fpsTimer;
+
+    QCheckBox*   sendMarkers;
+    QCheckBox*   sendRigidbodies;
+    QCheckBox*   sendSegments;
 
     int  frameCount;
 

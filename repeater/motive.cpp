@@ -37,11 +37,21 @@ Motive::Motive(QWidget *parent)
     label  = new QLabel(this);
     label2 = new QLabel(this);
 
+    sendMarkers = new QCheckBox("MKR", this);
+    sendMarkers->setChecked(true);
+    sendRigidbodies = new QCheckBox("RB", this);
+    sendRigidbodies->setChecked(true);
+    sendSegments = new QCheckBox("SEG", this);
+    sendSegments->setChecked(true);
+
     layout->addWidget(checkboxOnline, 0);
     layout->addWidget(buttonRb, 0);
 
     layout->addWidget(label, 0);
     layout->addWidget(label2, 1);
+    layout->addWidget(sendMarkers);
+    layout->addWidget(sendRigidbodies);
+    layout->addWidget(sendSegments);
     setLayout(layout);
 
 
@@ -266,12 +276,11 @@ void Motive::dataCallback( sFrameOfMocapData *data )
     unsigned int subf  = data->TimecodeSubframe;
 
     int hour, min, sec, tframe, subframe;
-    char buf[64];
+    char tcbuf[64];
 
     frameCount++;
 
-    natNetClient->DecodeTimecode(tc, subf, &hour, &min, &sec, &tframe, &subframe);
-    natNetClient->TimecodeStringify(tc, subf, buf, 64);
+
 
     if(store)
     {
@@ -290,41 +299,58 @@ void Motive::dataCallback( sFrameOfMocapData *data )
     {
         std::vector<peel::Item*> items;
 
-        // Send each rigidbody as a datagram
-        for(size_t i=0; i < data->nRigidBodies; i++)
+        if(sendRigidbodies->isChecked())
         {
-            const sRigidBodyData &rbd = data->RigidBodies[i];
-            items.push_back( new peel::Segment(rbDesc[rbd.ID].toLocal8Bit().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+            // Send each rigidbody as a datagram
+            for(size_t i=0; i < data->nRigidBodies; i++)
+            {
+                const sRigidBodyData &rbd = data->RigidBodies[i];
+                items.push_back( new peel::Segment(rbDesc[rbd.ID].toLocal8Bit().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+            }
         }
 
-        /*for(size_t i=0; i < data->nLabeledMarkers; i++)
+        if(sendMarkers->isChecked())
         {
-            const sMarker &mkr = data->LabeledMarkers[i];
-            if( i >= mkrDesc.length() ) getDescriptions();
-            if ( i < mkrDesc.length() )
-                items.push_back( new Marker( mkrDesc[i].toUtf8(), mkr.x, mkr.y, mkr.z ));
-        }*/
-
-        for(size_t i=0; i < data->nSkeletons; i++)
-        {
-            const sSkeletonData &skel = data->Skeletons[i];
-            for ( size_t j = 0; j < skel.nRigidBodies; j++)
+            for(size_t i=0; i < data->nLabeledMarkers; i++)
             {
-                const sRigidBodyData &rbd = skel.RigidBodyData[j];
-                QString name = skelDesc[ rbd.ID ];
-                items.push_back( new peel::Segment(name.toLocal8Bit().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+                const sMarker &mkr = data->LabeledMarkers[i];
+                if( i >= mkrDesc.length() ) getDescriptions();
+                if ( i < mkrDesc.length() )
+                    items.push_back( new peel::Marker( mkrDesc[i].toUtf8(), mkr.x, mkr.y, mkr.z ));
+            }
+        }
+
+        if(sendSegments->isChecked())
+        {
+            for(size_t i=0; i < data->nSkeletons; i++)
+            {
+                const sSkeletonData &skel = data->Skeletons[i];
+                for ( size_t j = 0; j < skel.nRigidBodies; j++)
+                {
+                    const sRigidBodyData &rbd = skel.RigidBodyData[j];
+                    QString name = skelDesc[ rbd.ID ];
+                    items.push_back( new peel::Segment(name.toLocal8Bit().data(), rbd.x, rbd.y, rbd.z, rbd.qx, rbd.qy, rbd.qz, rbd.qw) );
+                }
             }
         }
 
 
 
-        char buf[4096];
-        size_t len = serializeItems( items, buf, 9192 );
+        char buf[DATA_PACKET_SIZE];
+        size_t len = serializeItems( items, buf, DATA_PACKET_SIZE );
         udpSocket->writeDatagram( buf, len,  QHostAddress( mUdpServer), mUdpPort );
+
+        for(std::vector<peel::Item*>::iterator i = items.begin(); i != items.end(); i++)
+        {
+            delete (*i);
+        }
 
     }
 
-    QString tcs(buf);
+    natNetClient->DecodeTimecode(tc, subf, &hour, &min, &sec, &tframe, &subframe);
+    natNetClient->TimecodeStringify(tc, subf, tcbuf, 64);
+
+    QString tcs(tcbuf);
     int x = tcs.lastIndexOf('.');
     if(x>0) tcs = tcs.left(x);
     if(currentTC != tcs && store)

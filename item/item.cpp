@@ -7,7 +7,10 @@
 
 peel::Item::Item( const char * name_)
 {
-    strcpy(name, name_);
+    if(strlen(name_) >= NAMELEN)
+        strcpy(name, "OVERFLOW-ERROR");
+    else
+        strcpy(name, name_);
 }
 
 peel::Segment::Segment( const char *name_, float tx_, float ty_, float tz_,
@@ -34,7 +37,14 @@ peel::Marker::Marker( const char *name_, float tx_, float ty_, float tz_ )
 
 size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, size_t buflen)
 {
+
+#ifdef _DEBUG
+    memset( buffer, -2, buflen);
+#endif
     char *ptr = buffer;
+
+    if(buflen < 2)
+        return 0;
 
     *(ptr++) = 42; 
     *(ptr++) = (unsigned char) items.size(); 
@@ -52,6 +62,9 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
         {
             unsigned char namelen = strlen( segment->name );
 
+            if( ptr - buffer + 2 + namelen >= buflen  )
+                return ptr-buffer;
+
             *(ptr++) = 43;
             *(ptr++) = namelen;
             unsigned char *datalen = (unsigned char*)(ptr++);
@@ -64,6 +77,9 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
 
             for( int i =0 ; i < 7; i++)
             {
+                if ( ptr - buffer + 10 >= buflen )
+                    return ptr-buffer;
+
                 ret = sprintf( ptr, "%f",  *(eachFloat++) );
                 ptr += ret + 1;
                 *datalen += ret + 1;
@@ -72,6 +88,9 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
         if( marker != NULL)
         {
             unsigned char namelen = strlen( marker->name );
+
+            if( ptr - buffer + 2 + namelen >= buflen )
+                return ptr-buffer;
 
             *(ptr++) = 44;
             *(ptr++) = namelen;
@@ -85,6 +104,9 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
 
             for( int i =0 ; i < 3; i++)
             {
+                if ( ptr - buffer + 10 >= buflen )
+                    return ptr-buffer;
+
                 ret = sprintf( ptr, "%f",  *(eachFloat++) );
                 ptr += ret + 1;
                 *datalen += ret + 1;
@@ -100,6 +122,12 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
 
 size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*> *items )
 {
+
+	for (std::vector<peel::Item*>::iterator i = items->begin(); i != items->end(); i++)
+		delete (*i);
+
+	items->clear();
+
     if( len < 3) return 0;
 
     // The first character should be 42, the next should be the number if entries.
@@ -114,7 +142,7 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
 
     const char *ptr = buffer + 2;
 
-    items->clear();
+
 
     for (size_t i = 0; i < count && (ptr - buffer) < len; i++)
     {
@@ -131,7 +159,7 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
         const char*   name = ptr;  ptr += namelen;
         const char*   data = ptr;  ptr += datalen;
 
-        if (namelen > 30 )
+        if (namelen > NAMELEN)
         {
            fprintf(stderr, "Name length overflow: %.*s\n", name, namelen);
            continue;
@@ -155,7 +183,7 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
             float   *fptr = &segment->tx;
             size_t   dptr = 0;
 
-            for (int j = 0; j < 7 && ptr - buffer <= len; j++)
+            for (int j = 0; j < 7 && data + dptr < buffer + len; j++)
             {
                 fptr[j] = atof(data+dptr);
                 dptr += strlen(data+dptr)+1;
@@ -169,8 +197,6 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
         {
             Marker *marker = new Marker();
 
-		    
-
             // Name
             memcpy(marker->name, name, namelen);
             marker->name[namelen] = 0;
@@ -178,7 +204,7 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
             float      *fptr = &marker->tx;
             size_t      dptr = 0;
 
-            for (int j = 0; j < 3 && ptr - buffer < len; j++)
+            for (int j = 0; j < 3 && data + dptr < buffer + len; j++)
             {
                 fptr[j] = atof(data + dptr);
                 dptr += strlen(data + dptr) + 1;
@@ -202,9 +228,6 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
 			{
 				Marker *marker = new Marker();
 
-
-
-
 				// Name
 				memcpy(marker->name, name, namelen);
 				marker->name[namelen] = 0;
@@ -216,19 +239,24 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
 				items->push_back(marker);
 
 			}
-
-
-
 		}
-		
-
-
-
     }
 
     return ptr-buffer;
 }
 
+
+void peel::dumpItems(std::vector<peel::Item*> &items)
+{
+	for (std::vector<peel::Item*>::iterator i = items.begin(); i != items.end(); i++)
+	{
+		peel::Segment *s = dynamic_cast<peel::Segment*>(*i);
+		if (s != NULL) printf("Segment: %s %f %f %f   %f %f %f %f\n", s->name, s->tx, s->ty, s->tz, s->rx, s->ry, s->rz, s->rw);
+
+		peel::Marker *m = dynamic_cast<peel::Marker*>(*i);
+		if (m != NULL) printf("Marker: %s %f %f %f\n", m->name, m->tx, m->ty, m->tz);
+	}
+}
 
 
 void peel::dumpData( const char *buffer) 
