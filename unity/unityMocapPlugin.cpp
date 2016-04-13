@@ -2,6 +2,7 @@
 #include "item.h"
 #include "udpSocket.h"
 
+
 /*
 Gets mesh data from a named pipe and passes it to a unity script
 */
@@ -19,6 +20,7 @@ HANDLE hMutex;
 bool running;
 
 char threadInfo[255];
+char strbuf[1024];
 
 UdpServer *server;
 
@@ -78,7 +80,7 @@ BOOL WINAPI DllMain(
 {
 
 	WSADATA wsaData;
-	DWORD wVersionRequested = MAKEWORD(2, 2);
+	WORD wVersionRequested = MAKEWORD(2, 2);
 
 	switch (fdwReason)
 	{
@@ -105,7 +107,10 @@ BOOL WINAPI DllMain(
 }
 
 
+
 extern "C" {
+
+
 
 	void mocapBind(int p) { port = p; }
 	bool mocapBound() { return server->isConnected(); }
@@ -138,6 +143,50 @@ extern "C" {
 		ReleaseMutex(hMutex);
 
 		return c;
+	}
+
+	char* getSegment(int id,  float &tx, float &ty, float &tz, float &rx, float &ry, float &rz, float &rw)
+	{
+		tx = 0.0f;
+		ty = 0.0f;
+		tz = 0.0f;
+		rx = 0.0f;
+		ry = 0.0f;
+		rz = 0.0f;
+		rw = 0.0f;
+
+		DWORD res = WaitForSingleObject(hMutex, INFINITE);		
+
+		int c = 0;
+		for (std::vector<peel::Item*>::iterator i = items.begin(); i != items.end(); i++)
+		{
+			if (c > id) break;
+			peel::Segment* segment = dynamic_cast<peel::Segment*>(*i);
+			if (segment != NULL)
+			{
+				
+				if (c == id)
+				{
+					//name.assign(segment->name);
+					tx = segment->tx;
+					ty = segment->ty;
+					tz = segment->tz;
+					rx = segment->rx;
+					ry = segment->ry;
+					rz = segment->rz;
+					rw = segment->rw;
+					strcpy_s(strbuf, 1024, segment->name);
+					ReleaseMutex(hMutex);
+					return strbuf;
+				}
+				c++;
+			}
+		}
+	
+		ReleaseMutex(hMutex);
+
+		strbuf[0] = 0;
+		return strbuf;
 	}
 
 	char* ThreadInfo()

@@ -16,9 +16,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     ui->lineEditMayaPort->setText("8885");
 
 #ifdef _DEBUG
-    ui->lineEditRemote->setText("192.168.1.9");
-    ui->lineEditUdpHost->setText("192.168.1.9");
-    ui->lineEditMayaHost->setText("192.168.1.9");
+    ui->lineEditRemote->setText("127.0.0.1");
+    ui->lineEditUdpHost->setText("127.0.0.1");
+    ui->lineEditMayaHost->setText("127.0.0.1");
 #else
     ui->lineEditRemote->setText("192.168.1.49");
     ui->lineEditUdpHost->setText("192.168.1.22");

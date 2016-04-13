@@ -1,8 +1,10 @@
 //#ifdef DLLPROJECT_EXPORTS
-#define TESTFUNCDLL_API __declspec(dllexport) 
+#define TESTFUNCDLL_API __declspec(dllexport)
 //#else
 //#define TESTFUNCDLL_API __declspec(dllimport) 
 //#endif
+
+#include <string>
 
 extern "C" {
 
@@ -13,6 +15,8 @@ extern "C" {
 	TESTFUNCDLL_API int segments();
 
 	TESTFUNCDLL_API char* ThreadInfo();
+
+	TESTFUNCDLL_API char * getSegment(int id, float &tx, float &ty, float &tz, float &rx, float &ry, float &rz, float &rw);
 
 }
 
