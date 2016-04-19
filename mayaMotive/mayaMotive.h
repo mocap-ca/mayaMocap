@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <map>
 #include "data.h"
-
+#include <Windows.h>
 
 class MayaMotive : public MPxThreadedDeviceNode
 {

@@ -57,7 +57,7 @@ needs to be passed by a single buffer.
 #include <vector>
 
 #include "interfaces.h"
-#include <Windows.h>
+
 
 #include "data.h"
 
@@ -155,7 +155,7 @@ MStatus MayaMotive::initialize()
 	npLocalInterface = eAttr.create("localInterface", "iface", 0, &status);
 	MCHECKERROR(status, "creating motive local interface attribute");
 	interfaceList = getInterfaces();
-	for (int i = 0; i < interfaceList.length(); i++)
+	for (unsigned int i = 0; i < interfaceList.length(); i++)
 	{
 		eAttr.addField(interfaceList[i], i);
 	}
