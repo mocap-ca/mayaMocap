@@ -66,7 +66,7 @@ HIK-Character = is the name of the HIK character that will be created.
 *** SOURCE CODE ***
 
 https://github.com/mocap-ca/mayaMocap/tree/master/mayaMotive
-
+https://github.com/mocap-ca/mayaMocap/tree/master/plugin/python
 
 *** LICENSE *** 
 
