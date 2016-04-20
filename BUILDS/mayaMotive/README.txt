@@ -26,21 +26,44 @@ Please send support requests to this mailing list:
 https://groups.google.com/d/forum/sawmillmocap
 
 
-*** INSTRUCTIONS *** 
+*** QUICKSTART *** 
 
-1. Load the plugin.
-2. Run this python code:
+1. Install the correct plugin
 
+2. Copy/Clone the peelRealtime scripts from here:
+
+      https://github.com/mocap-ca/mayaMocap/tree/master/plugin/python
+
+3. Run the following python code:
+
+from peelRealtime import mocapNode
 import maya.cmds as m
-x = m.createNode('peelMotive')
-m.setAttr( x + ".motiveIp", "127.0.0.1", typ='string')
+x = mocapNode.MotiveNode('Motive')
+m.select(x.node) 
 
-   - this will create a node that should recieve the streaming data.
+4. Adjust the settings on the Motive node as needed.
 
-3. Check all the settings are correct and change as needed
-4. Click the "Live" checkbox on.
+5. Check "live" on. 
 
-If you change any settings click live off and on again to reconnect.
+6. Stream some data from motive (if nothing is moving in motive, nothing will happen in maya).
+
+7. Ensure Motive is streaming FBX named bones.  Unicast may be more stable.
+
+8. Run this python code in the same editor:
+
+x.connectNodes()
+
+9. Edit this line and run it:
+
+realtime.create( 'MarkerPrefix_', 'SkeletonNamespace', 'HIK-Character name')
+
+MarkerPrefix_ = the name of the actor (underscore after is important)
+SkeletonNamespace = is the namespace the skeleton will be put in to.
+HIK-Character = is the name of the HIK character that will be created.
+
+
+
+
 
 
 *** LICENSE *** 

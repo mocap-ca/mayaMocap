@@ -1,6 +1,7 @@
 import maya.cmds as m
 import maya.mel as mel
 
+    
 
 
 def jointList() :
@@ -40,7 +41,7 @@ def joints() :
     return list(s)
         
 
-def create( prefix, namespace ) :
+def create( prefix, namespace, character = None ) :
 
     m.select(cl=True)
 
@@ -70,6 +71,13 @@ def create( prefix, namespace ) :
 
     m.connectAttr( prefix + "Hips.t", namespace + ":Hips.t")     
     m.connectAttr( prefix + "Hips.r", namespace + ":Hips.r") 
+    
+    if character :
+        hold(namespace)
+        zero(namespace)
+        hik(character, namespace)
+        unhold(namespace)
+
 
 
 def holdAttr( node, attr, holdattr ) :
