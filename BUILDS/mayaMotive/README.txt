@@ -32,7 +32,7 @@ https://groups.google.com/d/forum/sawmillmocap
 
 2. Copy/Clone the peelRealtime scripts from here:
 
-      https://github.com/mocap-ca/mayaMocap/tree/master/plugin/python
+      https://github.com/mocap-ca/mayaMocap/raw/master/BUILDS/mayaMotive/peelRealtimePython.zip
 
 3. Run the following python code:
 
@@ -63,7 +63,9 @@ HIK-Character = is the name of the HIK character that will be created.
 
 
 
+*** SOURCE CODE ***
 
+https://github.com/mocap-ca/mayaMocap/tree/master/mayaMotive
 
 
 *** LICENSE *** 
