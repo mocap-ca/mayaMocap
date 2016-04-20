@@ -36,7 +36,7 @@ https://groups.google.com/d/forum/sawmillmocap
 
 3. Run the following python code:
 
-from peelRealtime import mocapNode
+from peelRealtime import mocapNode, realtime
 import maya.cmds as m
 x = mocapNode.MotiveNode('Motive')
 m.select(x.node) 
