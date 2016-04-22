@@ -43,6 +43,8 @@ def joints() :
 
 def create( prefix, namespace, character = None ) :
 
+    ''' create a skeleton for the marker prefix using the specified namespace '''
+
     m.select(cl=True)
 
     m.namespace( set=':' )
@@ -69,8 +71,16 @@ def create( prefix, namespace, character = None ) :
         except RuntimeError as e :
             m.warning(str(e))
 
-    m.connectAttr( prefix + "Hips.t", namespace + ":Hips.t")     
-    m.connectAttr( prefix + "Hips.r", namespace + ":Hips.r") 
+    try :
+        m.connectAttr( prefix + "Hips.t", namespace + ":Hips.t")
+    except RuntimeError as e :
+        m.warning(str(e))
+
+    try :
+        m.connectAttr( prefix + "Hips.r", namespace + ":Hips.r")
+    except RuntimeError as e :
+        m.warning(str(e))
+
     
     if character :
         hold(namespace)
@@ -81,6 +91,8 @@ def create( prefix, namespace, character = None ) :
 
 
 def holdAttr( node, attr, holdattr ) :
+
+    ''' move the connection over to a temp attribute '''
 
     if not m.objExists ( node + "." + attr ) : return
     con = m.listConnections( node + '.' + attr, p=True, s=True, d=False, scn=True ) 
@@ -97,6 +109,8 @@ def holdAttr( node, attr, holdattr ) :
     
 def unholdAttr( node, attr, holdattr ) :    
 
+    ''' move the connection off the temp attribute back to the normal one '''
+
     if not m.objExists( node + '.' + holdattr ) : return
 
     con = m.listConnections( node + '.' + holdattr, p=True, s=True, d=False, scn=True ) 
@@ -108,6 +122,8 @@ def unholdAttr( node, attr, holdattr ) :
 
     
 def hold( namespace ) :
+
+    ''' move all the translation/rotation connections on to a temp attribute for the namespace '''
 
     for joint in joints() :
         holdAttr ( namespace + ':' + joint, 'r', 'holdr' )
@@ -154,4 +170,13 @@ def hik( charName, namespace) :
         
         
         
-        
+def charAll() :
+
+    for i in m.ls( "*:Hips") :
+        sp = i.split(':')
+        hold( sp[0] )
+        zero( sp[0] )
+        hik( sp[0], sp[0] )
+        unhold( sp[0] )
+
+       

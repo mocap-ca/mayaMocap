@@ -353,9 +353,9 @@ void Motive::dataCallback( sFrameOfMocapData *data )
     QString tcs(tcbuf);
     int x = tcs.lastIndexOf('.');
     if(x>0) tcs = tcs.left(x);
-    if(currentTC != tcs && store)
+    if(currentTC != tcs)
     {
-        label->setText(QString("%1 %2").arg(frame).arg(tcs));
+        //label->setText(QString("%1 %2").arg(frame).arg(tcs));
         emit outFrame(frame, tcs);
         currentTC = tcs;
     }

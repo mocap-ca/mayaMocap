@@ -51,12 +51,16 @@ public:
 
     ~BaseSocket()
     {
-        if(mSocket > 0) ::CLOSESOCKET(mSocket) ;
+        if(mSocket > 0) close();
     }
 
     void close()
     {
-        if(mSocket > 0) ::CLOSESOCKET(mSocket);
+        if(mSocket > 0)
+        {
+            shutdown( mSocket, SHUT_RDWR );
+            ::CLOSESOCKET(mSocket);
+        }
 		mSocket = -1;
     }
 

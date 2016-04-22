@@ -1,22 +1,35 @@
 
 ifndef MAYA_RELEASE
 
-all : 2014 2016
+all : 2014 2014d 2016 2016d
 	echo "Build done."
 
 clean :
-	echo Cleaning 2014
+	echo Cleaning 
 	export MAYA_RELEASE=2014; make clean
+	export MAYA_RELEASE=2014d; make clean
+	export MAYA_RELEASE=2016; make clean
 
 2014 :
 	@echo "-----------------------------"
 	@echo "building 2014"
 	export MAYA_RELEASE=2014; make
 
+2014d :
+	@echo "-----------------------------"
+	@echo "building 2014d"
+	export MAYA_RELEASE=2014;DEBUG=1 make
+
+
 2016 :
 	@echo "-----------------------------"
 	@echo "building 2016"
 	export MAYA_RELEASE=2016; make
+
+2016d :
+	@echo "-----------------------------"
+	@echo "building 2016d"
+	export MAYA_RELEASE=2016;DEBUG=1 make
 
 
 else
@@ -25,7 +38,7 @@ else
 -include localsettings.mak
 
 # set to 1 for debug build
-DEBUG = 0
+#DEBUG = 1
 
 # determine os
 UNAME    = $(shell uname)
@@ -123,7 +136,7 @@ endif
 ##########
 
 PLUGIN       = $(PLUGIN_NAME)_$(PLUGIN_VERSION)_$(MAYA_RELEASE)$(DEBUGEXT).$(EXTENSION)
-PLUGIN_OBJ   = $(PLUGIN_SRC:%.cpp=$(BUILDDIR)/plugin/%.o)
+PLUGIN_OBJ   = $(PLUGIN_SRC:%.cpp=$(BUILDDIR)/plugin/%.o) $(OTHER_OBJ)
 
 
 
@@ -153,6 +166,12 @@ $(BUILDDIR)/plugin/%.o : %.cpp
 	@echo MAYA CFLAGS: $(MAYA_CFLAGS)
 	@echo RELEASE: plugin$(MAYA_RELEASE): $@
 	$(CXX) -o $@ -c $(MAYA_C++FLAGS) $(CFLAGS) $<
+
+clean:
+	-rm $(PLUGIN_OBJ)
+	-rmdir $(BUILDDIR)/plugin
+	-rmdir $(BUILDDIR)
+	-rm $(PLUGIN)
 
 
 # ends if/else maya version selection
