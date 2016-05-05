@@ -12,6 +12,8 @@
 #include <stdlib.h>   // Needed for _wtoi
 #include <stdint.h>
 
+#define SHUT_RDWR SD_BOTH
+
 #define CLOSESOCKET closesocket
 #else
 
@@ -58,7 +60,7 @@ public:
     {
         if(mSocket > 0)
         {
-            shutdown( mSocket, SHUT_RDWR );
+			shutdown(mSocket, SHUT_RDWR);
             ::CLOSESOCKET(mSocket);
         }
 		mSocket = -1;
