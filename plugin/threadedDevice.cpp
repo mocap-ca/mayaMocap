@@ -656,6 +656,7 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
 
             peel::Marker  *marker  = dynamic_cast<peel::Marker*> (*i);
             peel::Segment *segment = dynamic_cast<peel::Segment*> (*i);
+			peel::Joystick *jstick = dynamic_cast<peel::Joystick*> (*i);
 
             float3& otrans = tHandle.asFloat3();
 
@@ -694,6 +695,17 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
                 orot[1] = e.y * 57.2958f;
                 orot[2] = e.z * 57.2958f;
             }
+
+			if (jstick)
+			{
+				otrans[0] = jstick->x * scaleValue;
+				otrans[1] = jstick->y * scaleValue;
+				otrans[2] = 0.0f;
+				orot[0] = 0.0f;
+				orot[1] = 0.0f;
+				orot[2] = 0.0f;
+
+			}
 
 
             tPlug.setValue(tHandle);
