@@ -100,8 +100,11 @@ class MotiveNode(object):
             self.node = name
         else : 
             self.node = m.createNode("peelMotive", name=name)
-            
-        m.setAttr( self.node + ".scale", 10)
+        
+        try :
+            m.setAttr( self.node + ".scale", 10)
+        except Exception as e :
+            m.warning( str(e) )
         
     def setLive( self, val ) :
         m.setAttr( self.node + ".live", val )
@@ -124,7 +127,11 @@ class MocapNode(object) :
             self.node = m.createNode("peelRealtimeMocap", name=name)
             
         m.setAttr( self.node + ".port", port )
-        m.setAttr( self.node + ".scale", 10)
+        
+        try :
+            m.setAttr( self.node + ".scale", 10)
+        except Exception as e :
+            m.warning( str(e) )
         
     def setLive( self, val ) :
         m.setAttr( self.node + ".live", val )
