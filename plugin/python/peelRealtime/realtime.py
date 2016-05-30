@@ -1,7 +1,7 @@
 import maya.cmds as m
 import maya.mel as mel
 
-    
+''' Utilities for managing a realtime session in maya '''    
 
 
 def jointList() :
@@ -130,12 +130,18 @@ def hold( namespace ) :
         holdAttr ( namespace + ':' + joint, 't', 'holdt' )    
         
 def unhold( namespace ) :
+
+    ''' reconnect all the translation/rotation connections from the temp attr '''
+    
     for joint in joints() :
         unholdAttr ( namespace + ':' + joint, 'r', 'holdr' )
         unholdAttr ( namespace + ':' + joint, 't', 'holdt' )    
         
         
 def zero( namespace ) :
+
+    ''' set all the joint rotations to 0,0,0 '''
+    
     items = set()
     for i, j in jointList() :
         for k in [i,j] :
@@ -144,6 +150,8 @@ def zero( namespace ) :
 
 
 def hik( charName, namespace) :
+
+    ''' create a humanIk character for the skeleton '''
 
     joints = {}
 
@@ -156,21 +164,25 @@ def hik( charName, namespace) :
         if m.objExists( charAttr ) :
             con = m.listConnections ( charAttr )
             if con is not None and len( con ) > 0 :
-                    m.error( "Already characterized: " + j )        
+                    m.warning( "Already characterized: " + j )        
+                    return False
         
     if len(joints) == 0 :
         m.error( "No joints found")
-        return
+        return False
     
     char = mel.eval('hikCreateCharacter("%s")' % charName)
 
     for i in joints :
         mel.eval('hikAddSkToCharacter("%s", "%s", %d, false)' % ( char, joints[i], i ) )
         mel.eval('hikReadStancePoseTRSOffsetsForNode("%s", %d)' % ( char, i ) )
-        
-        
+
+    return True
+    
         
 def charAll() :
+
+    ''' characterize all skeletons '''
 
     for i in m.ls( "*:Hips") :
         sp = i.split(':')

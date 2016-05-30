@@ -3,11 +3,10 @@ import maya.cmds as m
 
 '''
 
-#m.loadPlugin('C:/cpp/git/github/mayaMocap/BUILDS/mayaMotive/MotiveRealtime2016.mll')
-
 from peelRealtime import mocapNode
 import maya.cmds as m
-m.loadPlugin('C:/cpp/git/github/mayaMocap/mayaMotive/x64/Debug2016/MotiveRealtime2016d.mll')
+
+
 
 m.file(f=True, new=True)
 reload(mocapNode)
@@ -29,7 +28,18 @@ m.unloadPlugin('MotiveRealtime2016d')
 
 
 
+
 '''
+
+def createNode( nodeType, nodeName ) :
+
+    node = m.createNode(nodeType, name=nodeName)
+    
+    if m.nodeType(node) == 'unknown' :
+        m.delete(node)
+        raise RuntimeError("Could not create node %s as %s - is the plugin loaded?" % (nodeName, nodeType ) )
+        
+    return node
 
 def connect( node, dataType ) :
 
@@ -95,11 +105,13 @@ def connect( node, dataType ) :
 
 class MotiveNode(object):
 
+    ''' Connect to motive directly using the MayaMotive plugin '''
+
     def __init__(self, name ) :
         if m.objExists( name  ) and m.nodeType( name ) == "peelMotive" : 
             self.node = name
         else : 
-            self.node = m.createNode("peelMotive", name=name)
+            self.node = createNode("peelMotive", name)
         
         try :
             m.setAttr( self.node + ".scale", 10)
@@ -118,20 +130,22 @@ class MotiveNode(object):
         connect( self.node, 'rigidbodies' )
 
 
-class MocapNode(object) :
+class UdpNode(object) :
     
-    def __init__(self, name, port ) :
+    def __init__(self, name, port=None ) :
         if m.objExists( name  ) and m.nodeType( name ) == "peelRealtimeMocap" : 
             self.node = name
-        else : 
-            self.node = m.createNode("peelRealtimeMocap", name=name)
+        else :             
+            self.node = createNode("peelRealtimeMocap", name)
+                
+            try :
+                m.setAttr( self.node + ".scale", 10)
+            except Exception as e :
+                m.warning( str(e) )
             
-        m.setAttr( self.node + ".port", port )
+        if port is not None :
+            m.setAttr( self.node + ".port", port )
         
-        try :
-            m.setAttr( self.node + ".scale", 10)
-        except Exception as e :
-            m.warning( str(e) )
         
     def setLive( self, val ) :
         m.setAttr( self.node + ".live", val )

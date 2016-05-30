@@ -732,7 +732,7 @@ void MayaMotive::dataCallback(sFrameOfMocapData *data)
 		const sRigidBodyData &rbd = data->RigidBodies[i];
 		MQuaternion q(rbd.qx, rbd.qy, rbd.qz, rbd.qw);
 		MEulerRotation e = q.asEulerRotation();
-		items.push_back(new MotiveSegment(rbd.ID, rbd.x, rbd.y, rbd.z, e.x, e.y, e.z));
+		items.push_back(new MotiveRigidbody(rbd.ID, rbd.x, rbd.y, rbd.z, e.x, e.y, e.z));
 	}
 
 	for (size_t i = 0; i < data->nSkeletons; i++)
