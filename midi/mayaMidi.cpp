@@ -6,7 +6,8 @@ MObject MidiDevice::oDevice;
 MObject MidiDevice::oChannel;
 MObject MidiDevice::oMidiOut;
 MObject MidiDevice::oTime;
-MObject MidiDevice::oStep;
+MObject MidiDevice::oFile;
+MObject MidiDevice::oWrite;
 UINT MidiDevice::mDevices;
 
 #include <maya/MFnPlugin.h>
@@ -26,6 +27,12 @@ UINT MidiDevice::mDevices;
 
 MTypeId MidiDevice::id(0x001126D7);
 
+MidiDevice::MidiDevice()
+	: mTime(0)
+	, mStep(0)
+	, mFp(NULL)
+{}
+
 void MidiDevice::postConstructor()
 {
 	MObjectArray oArray;
@@ -33,9 +40,6 @@ void MidiDevice::postConstructor()
 	setRefreshOutputAttributes(oArray);
 	createMemoryPools(1, BUFSIZE, 1);
 	InitializeCriticalSection(&cs);
-	mTime = 0;
-	mStep = 0;
-
 }
 
 MidiDevice::~MidiDevice()
@@ -82,6 +86,11 @@ void MidiDevice::midi_data(unsigned char event,
 	if (note >= 127) return;
 	EnterCriticalSection(&cs);
 	mValues[note] = velocity;
+	if (mFp != NULL)
+	{
+		fwrite(mValues, 1, 127, mFp);
+		fwrite((char*)&t, 1, sizeof(int), mFp);
+	}
 	mTime = t;
 	LeaveCriticalSection(&cs);
 }
@@ -158,8 +167,6 @@ void MidiDevice::threadHandler()
 				pushThreadData(buffer);
 			}
 			endThreadLoop();
-
-
 		}
 	}
 
@@ -197,7 +204,6 @@ MStatus MidiDevice::initialize()
 
 	mDevices = midiInGetNumDevs();
 
-
 	// device names - string list 
 	oDevice = eAttr.create("device", "dn", MFnData::kString, &status);
 	eAttr.setReadable(true);
@@ -232,6 +238,14 @@ MStatus MidiDevice::initialize()
 	numAttr.setWritable(false);
 	addAttribute(oStep);
 	//attributeAffects(oStep, );
+
+	// Filename - str
+	oFile = tAttr.create("file", "f", MFnData::kString);
+	addAttribute(oFile);
+
+	// Write - bool
+	oWrite = numAttr.create("write", "w", MFnNumericData::kBoolean);
+	addAttribute(oWrite);
 
 	// MidiOut - 127 channels, float array
 	oMidiOut = numAttr.create("midi", "m", MFnNumericData::kFloat, 0, &status);
@@ -270,6 +284,30 @@ MStatus MidiDevice::compute(const MPlug &plug, MDataBlock& block)
 	MDataHandle hChannel = block.inputValue(oChannel, &status);
 	MCHECKERROR(status, "getting channel data");
 	mChannel = hChannel.asInt();
+
+	// Write
+	MDataHandle hWrite = block.inputValue(oWrite, &status);
+	MCHECKERROR(status, "getting channel data");
+	bool oWrite = hWrite.asBool();
+
+	if(mFp == NULL && oWrite)
+	{
+		// File
+		MDataHandle hFile = block.inputValue(oFile, &status);
+		MCHECKERROR(status, "getting channel data");
+		MString filename = hFile.asString();
+
+		EnterCriticalSection(&cs);
+		fopen_s(&mFp, filename.asUTF8(), "wb");
+		LeaveCriticalSection(&cs);
+	}
+
+	if (mFp != NULL && !oWrite)
+	{
+		EnterCriticalSection(&cs);
+		fclose(mFp);
+		LeaveCriticalSection(&cs);
+	}
 
 	// Get an entry
 	MCharBuffer buffer;
@@ -311,6 +349,7 @@ MStatus MidiDevice::compute(const MPlug &plug, MDataBlock& block)
 	MCHECKERROR(status, "getting step handle");
 	int *sval = (int*)(data + 127 + sizeof(unsigned int));
 	hStep.set(*sval);
+
 
 
 	status = hValues.set(builderValues);

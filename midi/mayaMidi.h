@@ -14,6 +14,7 @@
 class MidiDevice : public MPxThreadedDeviceNode
 {
 public:
+	MidiDevice();
 	~MidiDevice();
 
 	//void threadHandler(const char* serverName, const char *deviceName );
@@ -41,6 +42,8 @@ public:
 	static MObject      oMidiOut;   // 127 floats  (out)
 	static MObject      oTime;
 	static MObject      oStep;
+	static MObject      oFile;
+	static MObject      oWrite;
 
 	static MTypeId id;
 
@@ -52,6 +55,8 @@ public:
 	unsigned char  mValues[127];
 	int            mTime;
 	int            mStep;
+
+	FILE *mFp;
 
 	mutable CRITICAL_SECTION cs;
 };
