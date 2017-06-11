@@ -57,7 +57,7 @@ needs to be passed by a single buffer.
 #include <vector>
 
 #include "interfaces.h"
-#include <Windows.h>
+
 
 #include "data.h"
 
@@ -93,7 +93,7 @@ MTypeId MayaMotive::id(0x001126D4);
 #define MCHECKERROR(x, msg) { if(x!=MS::kSuccess) { x.perror(msg); return x;} }
 #define MERR(x, msg) { status = x; MCHECKERROR(status, msg); }
 
-#define BUFSIZE      1024 * 12
+#define BUFSIZE      1024 * 24   // One character including markers is 1308 bytes.
 #define COMMAND_PORT 1510
 #define DATA_PORT    1511	
 
@@ -155,7 +155,7 @@ MStatus MayaMotive::initialize()
 	npLocalInterface = eAttr.create("localInterface", "iface", 0, &status);
 	MCHECKERROR(status, "creating motive local interface attribute");
 	interfaceList = getInterfaces();
-	for (int i = 0; i < interfaceList.length(); i++)
+	for (unsigned int i = 0; i < interfaceList.length(); i++)
 	{
 		eAttr.addField(interfaceList[i], i);
 	}
@@ -312,7 +312,8 @@ MStatus MayaMotive::compute(const MPlug &plug, MDataBlock& block)
 	// Local Interface
 	MDataHandle hLocalInterface = block.inputValue(npLocalInterface, &status);
 	MCHECKERROR(status, "getting motive local interface value");
-	localInterface = interfaceList[hLocalInterface.asInt()];
+	short ifaceSel = hLocalInterface.asInt();
+	localInterface = interfaceList[ifaceSel];
 
 	// Motive Multicast Interface
 	MDataHandle hMulticastAddress = block.inputValue(npMulticastAddress, &status);
@@ -380,23 +381,32 @@ MStatus MayaMotive::compute(const MPlug &plug, MDataBlock& block)
 		if (rb != NULL)
 		{
 			int index = findNameId(rigidbodyNames, rb->id, rbPlug, rbnPlug, rigidbodies, block);
-			setVector(rb->tx*scale,   rb->ty*scale,   rb->tz*scale,   index, rigidbodies, rbtPlug, block);
-			setVector(rb->rx*rad2deg, rb->ry*rad2deg, rb->rz*rad2deg, index, rigidbodies, rbrPlug, block);
+			if (index != -1)
+			{
+				setVector(rb->tx*scale, rb->ty*scale, rb->tz*scale, index, rigidbodies, rbtPlug, block);
+				setVector(rb->rx*rad2deg, rb->ry*rad2deg, rb->rz*rad2deg, index, rigidbodies, rbrPlug, block);
+			}
 		}
 
 		MotiveMarker *marker = dynamic_cast<MotiveMarker*>(*i);
 		if (marker != NULL)
 		{
 			int index = findNameId(markerNames, marker->id, mkrPlug, mkrnPlug, markers, block);
-			setVector(marker->x*scale, marker->y*scale, marker->z*scale, index, markers, mkrtPlug, block);
+			if (index != -1)
+			{
+				setVector(marker->x*scale, marker->y*scale, marker->z*scale, index, markers, mkrtPlug, block);
+			}
 		}
 
 		MotiveSegment *segment = dynamic_cast<MotiveSegment*>(*i);
 		if (segment != NULL)
 		{
 			int index = findNameId(jointNames, segment->id, segPlug, segnPlug, segments, block);
-			setVector(segment->tx*scale,   segment->ty*scale,   segment->tz*scale,   index, segments, segtPlug, block);
-			setVector(segment->rx*rad2deg, segment->ry*rad2deg, segment->rz*rad2deg, index, segments, segrPlug, block);
+			if (index != -1)
+			{
+				setVector(segment->tx*scale, segment->ty*scale, segment->tz*scale, index, segments, segtPlug, block);
+				setVector(segment->rx*rad2deg, segment->ry*rad2deg, segment->rz*rad2deg, index, segments, segrPlug, block);
+			}
 		}
 
 		MotiveMessage *message = dynamic_cast<MotiveMessage*>(*i);
@@ -432,9 +442,9 @@ MStatus MayaMotive::compute(const MPlug &plug, MDataBlock& block)
 int MayaMotive::findNameId(
 	std::map<int, MString> &mapping, 
 	int     nameId, 
-	MPlug   groupPlug, 
-	MPlug   namePlug,
-	MObject groupObject, 
+	MPlug   &groupPlug, 
+	MPlug   &namePlug,
+	MObject &groupObject, 
 	MDataBlock& block)
 {
 	MStatus status;
@@ -442,12 +452,19 @@ int MayaMotive::findNameId(
 	if (i == mapping.end()) return -1;
 	MString name = (*i).second;
 
+	
+
 	int arrayIndex = -1;
 	for (unsigned int i = 0; i < groupPlug.numElements(); i++)
 	{
 		// Get the name
+		//MDataHandle nHandle = namePlug.constructHandle(block);
+
 		MERR(namePlug.selectAncestorLogicalIndex(i, groupObject), "Selecting name attribute");
-		MString a = namePlug.asString();
+		MDataHandle inputDataHandle = block.inputValue(namePlug);
+		MString a = inputDataHandle.asString();
+		if (a.length() == 0) continue;
+		//MString a = namePlug.asString();
 		MString b = MString(name);
 		if ( a == b) return i;
 	}
@@ -513,12 +530,12 @@ void MayaMotive::sendData(const char *data, size_t datalen)
 	}
 
 	// Position of data blocks
-	size_t *header = (size_t*)buffer.ptr();
-	char   *datablock = buffer.ptr() + sizeof(size_t);
 
 	// thread safe copy data
 	beginThreadLoop();
 	{
+		size_t *header = (size_t*)buffer.ptr();
+		char   *datablock = buffer.ptr() + sizeof(size_t);
 		*header = datalen;
 		memcpy(datablock, data, datalen);
 		pushThreadData(buffer);
@@ -546,7 +563,11 @@ void MayaMotive::threadHandler()
 
 		if (!this->isConnected())
 		{
-			this->connect();
+			if (!this->connect())
+			{
+				setDone(true);
+				break;
+			}
 			Sleep(500);
 			continue;
 		}
@@ -585,6 +606,7 @@ bool MayaMotive::isConnected()
 
 void MayaMotive::disconnect()
 {
+	if (natNetClient == NULL) return;
 	natNetClient->Uninitialize();
 	delete natNetClient;
 	natNetClient = NULL;
@@ -595,13 +617,21 @@ bool MayaMotive::connect()
 {
 	if (natNetClient != NULL) disconnect();
 
+	char *motive = (char*)motiveIp.asChar();
+	char *iface = (char*)localInterface.asChar();
+
+	if (motive[0] == 0 || iface[0] == 0)
+	{
+		MGlobal::displayError("Invalid IP");
+		return false;
+	}
+
+
 	natNetClient = new NatNetClient(mode);
 
 	char *mc = (char*)multicastAddress.asChar();
 	natNetClient->SetMulticastAddress(mc);
 
-	char *motive = (char*)motiveIp.asChar();
-	char *iface = (char*)localInterface.asChar();
 	int ret = natNetClient->Initialize(iface, motive, commandPort, dataPort);
 
 	if (ret == 0)
@@ -634,19 +664,20 @@ void MayaMotive::getDescriptions()
 	{
 		if (desc->arrDataDescriptions[i].type == Descriptor_MarkerSet)
 		{
+			char *n = desc->arrDataDescriptions[i].Data.MarkerSetDescription[0].szName;
+			if (n[0] != 'a' && n[1] != 'l' && n[2] != 'l' && n[3] != '0') continue;
+
 			sMarkerSetDescription* md;
 
 			md = desc->arrDataDescriptions[i].Data.MarkerSetDescription;
 
+			
 			char*ptr = *md->szMarkerNames;
+			
 			for (int j = 0; j < md->nMarkers; j++)
 			{
-				size_t len = strlen(ptr);
-				MString name(md->szName);
-				name += '_';
-				name += MString(ptr);
-				markerNames[j] = name;
-				ptr += len + 1;
+				markerNames[j] = MString(ptr);
+				ptr += strlen(ptr) + 1;
 			}
 		}
 
@@ -688,12 +719,20 @@ void MayaMotive::dataCallback(sFrameOfMocapData *data)
 	// Sync motive and maya sub-thread
 	WaitForSingleObject(hMutex, INFINITE);
 
+	items.clear();
+
+	for (size_t i = 0; i < data->nLabeledMarkers; i++)
+	{
+		const sMarker &mkr = data->LabeledMarkers[i];
+		items.push_back(new MotiveMarker(i, mkr.x, mkr.y, mkr.z));
+	}
+
 	for (size_t i = 0; i < data->nRigidBodies; i++)
 	{
 		const sRigidBodyData &rbd = data->RigidBodies[i];
 		MQuaternion q(rbd.qx, rbd.qy, rbd.qz, rbd.qw);
 		MEulerRotation e = q.asEulerRotation();
-		items.push_back(new MotiveSegment(rbd.ID, rbd.x, rbd.y, rbd.z, e.x, e.y, e.z));
+		items.push_back(new MotiveRigidbody(rbd.ID, rbd.x, rbd.y, rbd.z, e.x, e.y, e.z));
 	}
 
 	for (size_t i = 0; i < data->nSkeletons; i++)

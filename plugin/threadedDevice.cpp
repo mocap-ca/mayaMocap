@@ -20,7 +20,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-
+//#include <pair>
 
 /*
 Usage:
@@ -583,7 +583,7 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
     {
         // Output
         MArrayDataHandle outHandle = block.outputArrayValue( mocap, &status );
-        MCHECKERROR( status, "mocap handle");
+        MCHECKERROR( status, "mocap out handle");
 
         std::vector<Item*> items;
 
@@ -596,10 +596,56 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
         int arrayIndex;
         int id = 0;
 
+        int last = 0;
+        typedef std::vector< std::pair<int, MString> > TNameMap;
+        TNameMap nameMap;
+
+        //printf("Len: %d\n", outHandle.elementCount() );
+
+        for(id = 0; id < outHandle.elementCount(); id++)
+        {
+            // Name
+            status = nPlug.selectAncestorLogicalIndex( id, mocap );
+            MCHECKERROR(status, "Selecting name attribute");
+
+            MString name;
+            nPlug.getValue( name );
+            nameMap.push_back( std::make_pair(id, name) );
+        }
+            
+           
+        id = 0; 
+
         for(std::vector<Item*>::iterator i = items.begin(); i != items.end(); i++, id++)
         {
-            arrayIndex = id;
-            if( strcmp( (*i)->name, "VCAM") == 0 ) arrayIndex = 100;
+
+            // Find a matching name
+            arrayIndex =  -1;
+            for( TNameMap::iterator j = nameMap.begin(); j != nameMap.end(); j++)
+            {
+                if( (*j).second == (*i)->name )
+                { 
+                    arrayIndex = (*j).first;
+                    break;
+                }
+            }
+
+            // Find a blank entry
+            if(arrayIndex == -1)
+            {
+                for( TNameMap::iterator j = nameMap.begin(); j != nameMap.end(); j++)
+                {
+                    if( (*j).second.length() == 0 )
+                    { 
+                        arrayIndex = (*j).first;
+                        break;
+                    }
+                }
+            }
+
+            // Append
+            if(arrayIndex == -1)
+                arrayIndex = outHandle.elementCount();
 
             // Translation Handle
             status = tPlug.selectAncestorLogicalIndex( arrayIndex, mocap );
@@ -610,6 +656,7 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
 
             peel::Marker  *marker  = dynamic_cast<peel::Marker*> (*i);
             peel::Segment *segment = dynamic_cast<peel::Segment*> (*i);
+			peel::Joystick *jstick = dynamic_cast<peel::Joystick*> (*i);
 
             float3& otrans = tHandle.asFloat3();
 
@@ -648,6 +695,17 @@ MStatus ThreadedDevice::compute( const MPlug &plug, MDataBlock& block)
                 orot[1] = e.y * 57.2958f;
                 orot[2] = e.z * 57.2958f;
             }
+
+			if (jstick)
+			{
+				otrans[0] = jstick->x * scaleValue;
+				otrans[1] = jstick->y * scaleValue;
+				otrans[2] = 0.0f;
+				orot[0] = 0.0f;
+				orot[1] = 0.0f;
+				orot[2] = 0.0f;
+
+			}
 
 
             tPlug.setValue(tHandle);

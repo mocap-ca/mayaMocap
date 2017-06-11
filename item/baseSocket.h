@@ -1,16 +1,26 @@
 #ifndef BASE_SOCKET_H
 #define BASE_SOCKET_H
 
-#include <sys/types.h>
+
 
 #ifdef _WIN32
+
+#define NTDDI_VERSION NTDDI_VISTA 
+#define _WIN32_WINNT _WIN32_WINNT_VISTA 
+
 #pragma comment(lib,"Ws2_32.lib")
 
+#include <Ws2tcpip.h>
+//#include <windows.h>
+
 #include <winsock2.h>
-#include <ws2tcpip.h>
 #include <stdio.h>
 #include <stdlib.h>   // Needed for _wtoi
+#include <sys/types.h>
 #include <stdint.h>
+
+
+#define SHUT_RDWR SD_BOTH
 
 #define CLOSESOCKET closesocket
 #else
@@ -29,6 +39,7 @@
 
 #endif
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -49,15 +60,19 @@ public:
         mAddr.sin_addr.s_addr = INADDR_ANY;
     }
 
-    ~BaseSocket()
+    virtual ~BaseSocket()
     {
-        if(mSocket > 0) ::CLOSESOCKET(mSocket) ;
+        if(mSocket > 0) close();
     }
 
     void close()
     {
-        if(mSocket > 0) ::CLOSESOCKET(mSocket);
-		mSocket = -1;
+        if(mSocket > 0)
+        {
+			shutdown(mSocket, SHUT_RDWR);
+            ::CLOSESOCKET(mSocket);
+        }
+		mSocket = INVALID_SOCKET;
     }
 
     bool isConnected()
@@ -75,7 +90,7 @@ public:
     {
 
         // Close the socket if open, and create a new one
-        if(mSocket != -1) ::CLOSESOCKET(mSocket);
+        if(mSocket != INVALID_SOCKET) ::CLOSESOCKET(mSocket);
         if(!create()) return false;
 
         mAddr.sin_port = htons(port);
@@ -117,7 +132,7 @@ public:
 		addr.sin_port = htons(port);
 
 #ifdef _WIN32
-		return inet_pton(AF_INET, host, &addr.sin_addr) != -1;
+		return InetPton(AF_INET, host, &addr.sin_addr) != -1;
 #else
 		return inet_aton(host, &addr.sin_addr) != -1;
 #endif

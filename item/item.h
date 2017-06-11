@@ -64,8 +64,18 @@ public:
     float tz;
 };
 
+class Joystick : public Item
+{
+public:
+	Joystick() {}
+	Joystick(const char *name_, float x_, float y_);
+	float x;
+	float y;
+};
 
 
+
+size_t writeHeader(char* buf, size_t buflen, char id, const char *name, short **datalen);
 
 size_t serializeItems( std::vector<Item*> &items,  char *buffer, size_t buflen);
         

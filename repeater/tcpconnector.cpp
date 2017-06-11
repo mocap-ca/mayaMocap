@@ -11,14 +11,23 @@ TcpConnector::TcpConnector(QWidget *parent)
     connect(socket,  SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(sError(QAbstractSocket::SocketError)));
     connect(socket,  SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT( sState(QAbstractSocket::SocketState)));
 
-    button = new QPushButton("Connect", this);
+    checkboxOnline = new QCheckBox(this);
     layout = new QHBoxLayout(this);
-    layout->addWidget( button );
+    layout->addWidget( checkboxOnline );
     setLayout(layout);
 
     setEnabled(false);
 
-    connect(button, SIGNAL(pressed()), this, SLOT(connect_button()));
+    connect(checkboxOnline, SIGNAL(clicked(bool)), this, SLOT(online(bool)));
+
+    checkboxOnline->setMinimumHeight( 19 );
+    checkboxOnline->setMaximumHeight( 19 );
+    setMinimumHeight( 19 );
+    setMaximumHeight( 19 );
+    checkboxOnline->setStyleSheet("margin: 0px; border: 1px red solid;");
+    setStyleSheet("margin: 0px; border: 1px red solid;");
+
+    layout->setMargin(0);
 }
 
 void TcpConnector::setName( QString name )
@@ -102,7 +111,7 @@ void TcpConnector::initialize(QPair<QString, int> hostport)
     setEnabled(true);
 }
 
-bool TcpConnector::sendMessage(QString data)
+bool TcpConnector::sendData( QByteArray& data)
 {
     if(!this->isEnabled()) return false;
 
@@ -118,10 +127,15 @@ bool TcpConnector::sendMessage(QString data)
         return false;
     }
 
-    QByteArray x = data.toUtf8();
-    bool ret = socket->write(x) == x.length();
+    bool ret = socket->write(data) == data.length();
     socket->flush();
+
     return ret;
+}
+
+bool TcpConnector::sendMessage(QString data)
+{
+    return sendData(data.toUtf8());
 }
 
 QString TcpConnector::socketState(QAbstractSocket::SocketState state)
@@ -141,8 +155,8 @@ QString TcpConnector::socketState(QAbstractSocket::SocketState state)
 }
 
 
-// button event
-void TcpConnector::connect_button()
+// checkbox event
+void TcpConnector::online(bool val)
 {
     QAbstractSocket::SocketState s = socket->state();
     if(s == QAbstractSocket::UnconnectedState)
@@ -169,16 +183,17 @@ void TcpConnector::sState(QAbstractSocket::SocketState state)
 //    logMessage( socketState( state ));
     if(state == QAbstractSocket::UnconnectedState)
     {
-        button->setStyleSheet("");
+        checkboxOnline->setCheckState(Qt::Unchecked);
     }
     else
     if(state == QAbstractSocket::ConnectedState)
     {
-        button->setStyleSheet("background-color: #33ff33; color: #000000");
+        checkboxOnline->setCheckState(Qt::Checked);
+        //button->setStyleSheet("background-color: #33ff33; color: #000000");
     }
     else
     {
-       button->setStyleSheet("background-color: #882222; color: #ffffff");
+        checkboxOnline->setCheckState(Qt::PartiallyChecked);
     }
 
     if(mConnect && state == QAbstractSocket::UnconnectedState)
@@ -187,7 +202,7 @@ void TcpConnector::sState(QAbstractSocket::SocketState state)
         _connectSocket();
     }
 
-    button->setText( socketState( state ));
+    //button->setText( socketState( state ));
     emit stateChange( socketState(state) );
 }
 

@@ -45,8 +45,6 @@ MStringArray getInterfaces	()
 	DWORD dwRetVal = 0;
 	IN_ADDR IPAddr;
 
-	LPVOID lpMsgBuf;
-
 	pIPAddrTable = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE));
 
 	if (pIPAddrTable) {

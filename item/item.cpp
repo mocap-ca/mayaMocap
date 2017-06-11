@@ -34,9 +34,34 @@ peel::Marker::Marker( const char *name_, float tx_, float ty_, float tz_ )
         tz = tz_;
 }
 
+peel::Joystick::Joystick(const char *name_, float x_, float y_)
+	: Item(name_)
+{
+	x = x_;
+	y = y_;
+}
+
+
+size_t peel::writeHeader(char* buf, size_t buflen, char id, const char *name, short **datalen)
+{
+	unsigned char namelen = strlen(name);
+
+	if (4 + namelen >= buflen) return -1;
+
+	buf[0] = id;
+	buf[1] = namelen;
+
+	*datalen = (short*)(buf+2);
+	**datalen = 0;
+
+	memcpy(buf+4, name, namelen);
+	return 4 + namelen;
+
+}
 
 size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, size_t buflen)
 {
+	short *datalen = NULL;
 
 #ifdef _DEBUG
     memset( buffer, -2, buflen);
@@ -55,23 +80,16 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
     {
 
         Item *item = items[i];
-        Segment *segment = dynamic_cast<peel::Segment*>( item );
-        Marker  *marker  = dynamic_cast<peel::Marker*> ( item );
+        Segment  *segment = dynamic_cast<peel::Segment*>( item );
+        Marker   *marker  = dynamic_cast<peel::Marker*> (item);
+		Joystick *jstick  = dynamic_cast<peel::Joystick*> (item);
 
-        if( segment != NULL)
+        if( segment != nullptr)
         {
-            unsigned char namelen = strlen( segment->name );
-
-            if( ptr - buffer + 2 + namelen >= buflen  )
-                return ptr-buffer;
-
-            *(ptr++) = 43;
-            *(ptr++) = namelen;
-            unsigned char *datalen = (unsigned char*)(ptr++);
-            *datalen = 0;
-
-            memcpy( ptr, segment->name, namelen);
-            ptr += namelen;
+			// Write the header
+			size_t ret = writeHeader(ptr, buflen - (ptr - buffer), 43, segment->name, &datalen);
+			if (ret == -1) return ptr - buffer; // overflow
+			ptr += ret;
 
             float *eachFloat = &segment->tx;
 
@@ -85,20 +103,12 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
                 *datalen += ret + 1;
             };
         }
-        if( marker != NULL)
+        if( marker != nullptr)
         {
-            unsigned char namelen = strlen( marker->name );
-
-            if( ptr - buffer + 2 + namelen >= buflen )
-                return ptr-buffer;
-
-            *(ptr++) = 44;
-            *(ptr++) = namelen;
-            unsigned char *datalen = (unsigned char*)(ptr++);
-            *datalen = 0;
-
-            memcpy( ptr, marker->name, namelen);
-            ptr += namelen;
+			// Write the header
+			size_t ret = writeHeader(ptr, buflen - (ptr - buffer), 44, marker->name, &datalen);
+			if (ret == -1) return ptr - buffer; // overflow
+			ptr += ret;
 
             float *eachFloat = &marker->tx;
 
@@ -112,6 +122,25 @@ size_t peel::serializeItems( std::vector<peel::Item*> &items,  char *buffer, siz
                 *datalen += ret + 1;
             };
         }
+		if (jstick != nullptr)
+		{
+			// Write the header
+			
+			size_t ret = writeHeader(ptr, buflen - (ptr - buffer), 45, jstick->name, &datalen);
+			if (ret == -1) return ptr - buffer; // overflow
+			ptr += ret;
+
+			if (ptr - buffer + 20 >= buflen)
+				return ptr - buffer;
+
+			ret = sprintf(ptr, "%f", jstick->x);
+			ptr += ret + 1;
+			*datalen += ret + 1;
+
+			ret = sprintf(ptr, "%f", jstick->y);
+			ptr += ret + 1;
+			*datalen += ret + 1;
+		}
 
     }
 
@@ -155,7 +184,7 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
         }
 
         unsigned char namelen = *(ptr++);
-        unsigned char datalen = *(ptr++);
+		unsigned short datalen = *(short*)(ptr);  ptr += 2;
         const char*   name = ptr;  ptr += namelen;
         const char*   data = ptr;  ptr += datalen;
 
@@ -226,18 +255,16 @@ size_t peel::parseItems(const char *buffer, size_t len, std::vector<peel::Item*>
 
 			if (ret == 2)
 			{
-				Marker *marker = new Marker();
+				peel::Joystick *joystick = new peel::Joystick();
 
 				// Name
-				memcpy(marker->name, name, namelen);
-				marker->name[namelen] = 0;
+				memcpy(joystick->name, name, namelen);
+				joystick->name[namelen] = 0;
 
-				marker->tx = f1;
-				marker->ty = f2;
-				marker->tz = 0.0f;
+				joystick->x = f1;
+				joystick->y = f2;
 
-				items->push_back(marker);
-
+				items->push_back(joystick);
 			}
 		}
     }
@@ -251,10 +278,13 @@ void peel::dumpItems(std::vector<peel::Item*> &items)
 	for (std::vector<peel::Item*>::iterator i = items.begin(); i != items.end(); i++)
 	{
 		peel::Segment *s = dynamic_cast<peel::Segment*>(*i);
-		if (s != NULL) printf("Segment: %s %f %f %f   %f %f %f %f\n", s->name, s->tx, s->ty, s->tz, s->rx, s->ry, s->rz, s->rw);
+		if (s != nullptr) printf("Segment: %s %f %f %f   %f %f %f %f\n", s->name, s->tx, s->ty, s->tz, s->rx, s->ry, s->rz, s->rw);
 
 		peel::Marker *m = dynamic_cast<peel::Marker*>(*i);
-		if (m != NULL) printf("Marker: %s %f %f %f\n", m->name, m->tx, m->ty, m->tz);
+		if (m != nullptr) printf("Marker: %s %f %f %f\n", m->name, m->tx, m->ty, m->tz);
+
+		peel::Joystick *j = dynamic_cast<peel::Joystick*>(*i);
+		if (j != nullptr) printf("Joystick: %s %f %f\n", j->name, j->x, j->y);
 	}
 }
 
@@ -277,14 +307,14 @@ void peel::dumpData( const char *buffer)
     {
         char id = *(ptr++);
 
-        if( id != 43 && id != 44)
+        if( id != 43 && id != 44 && id != 45)
         {
             fprintf(stderr, "Invalid Packet entry at byte: %zu\n", ptr-buffer);
             return;
         }
 
         unsigned char namelen = *(ptr++);
-        unsigned char datalen = *(ptr++);
+		unsigned short datalen = *(short*)(ptr); ptr += 2;
 
         const char* name = ptr;  ptr+= namelen;
         const char* data = ptr;  ptr+= datalen;

@@ -5,7 +5,7 @@
 #include <QString>
 #include <QTcpSocket>
 #include <QLabel>
-#include <QPushButton>
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QStringList>
 
@@ -19,7 +19,7 @@ public:
     QTcpSocket *socket;
 
     QHBoxLayout* layout;
-    QPushButton* button;
+    QCheckBox*   checkboxOnline;
     QStringList  messages;
 
 protected:
@@ -39,6 +39,7 @@ public:
     void    initialize(QString host, qint16 port);
     void    initialize(QPair<QString, int>);
     bool    sendMessage(QString);
+    bool    sendData( QByteArray& );
     QString socketState(QAbstractSocket::SocketState state);
     bool    isConnected();
 
@@ -49,7 +50,7 @@ protected slots:
     void sConnect();
     void sDisconnect();
 
-    void connect_button();
+    void online(bool);
     void readAndSplit();
 
     void sState(QAbstractSocket::SocketState);

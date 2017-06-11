@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <map>
 #include "data.h"
-
+#include <Windows.h>
 
 class MayaMotive : public MPxThreadedDeviceNode
 {
@@ -90,9 +90,9 @@ public:
 
 	int findNameId(std::map<int, MString> &mapping,
 		int     nameId,
-		MPlug   groupPlug,
-		MPlug   namePlug,
-		MObject groupObject,
+		MPlug   &groupPlug,
+		MPlug   &namePlug,
+		MObject &groupObject,
 		MDataBlock& block);
 
 	MStatus setVector(float x, float y, float z, int index, MObject &groupObject, MPlug &plug, MDataBlock &block);
