@@ -34,8 +34,6 @@ Motive::Motive(QWidget *parent)
     checkboxOnline = new QCheckBox(this);
     buttonRb = new QPushButton("Update", this);
     layout = new QHBoxLayout(this);
-    label  = new QLabel(this);
-    label2 = new QLabel(this);
 
     sendMarkers = new QCheckBox("MKR", this);
     sendMarkers->setChecked(true);
@@ -46,9 +44,6 @@ Motive::Motive(QWidget *parent)
 
     layout->addWidget(checkboxOnline, 0);
     layout->addWidget(buttonRb, 0);
-
-    layout->addWidget(label, 0);
-    layout->addWidget(label2, 1);
     layout->addWidget(sendMarkers);
     layout->addWidget(sendRigidbodies);
     layout->addWidget(sendSegments);
@@ -90,13 +85,6 @@ void Motive::fpsEvent()
 
     frameCount = 0;
 
-    QStringList rbs( rbDesc.values() );
-    int skels = skelDesc.count();
-
-    label2->setText(QString( "RB: %1  SK: %2" ).arg( rbs.join(',')).arg( skels));
-    infoMutex.lock();
-    label->setText(infoMessage);
-    infoMutex.unlock();
 }
 
 void Motive::initialize(bool multicast,
@@ -122,11 +110,14 @@ void Motive::initialize(bool multicast,
 
 int Motive::doConnect()
 {
-
-    if(natNetClient == NULL)
+    if(natNetClient != NULL)
     {
-        natNetClient = new NatNetClient(mMulticast ? 0 : 1);
+        natNetClient->Uninitialize();
+	delete natNetClient;
+	mConnected = false;
     }
+
+    natNetClient = new NatNetClient(mMulticast ? 0 : 1);
 
     if(mConnected)
     {
@@ -155,12 +146,11 @@ int Motive::doConnect()
         
         checkboxOnline->setCheckState(Qt::Checked);
 
-        natNetClient->SetMessageCallback( &::messageCallback );
-
         getDescriptions();
 
-        natNetClient->SetDataCallback( &::dataCallback, (void*)this );
         gMotive = this;  // yuk.
+        natNetClient->SetMessageCallback( &::messageCallback );
+        natNetClient->SetDataCallback( &::dataCallback, (void*)this );
 
         logMessage("Motive Connected");
 
@@ -248,6 +238,9 @@ void Motive::getDescriptions()
 #ifdef BUG
     if(ff.isOpen()) ff.close();
 #endif
+	emit outMarkerList( mkrDesc );
+	emit outRBList (rbDesc.values() );
+	emit outSkelList ( skelDesc.values() );
 }
 
 void Motive::doDisconnect()
@@ -353,16 +346,12 @@ void Motive::dataCallback( sFrameOfMocapData *data )
     QString tcs(tcbuf);
     int x = tcs.lastIndexOf('.');
     if(x>0) tcs = tcs.left(x);
-    if(currentTC != tcs && store)
-    {
+    //if(currentTC != tcs && store)
+    //{
         label->setText(QString("%1 %2").arg(frame).arg(tcs));
         emit outFrame(frame, tcs);
         currentTC = tcs;
-    }
-
-    infoMutex.lock();
-    infoMessage = QString("%1 %2").arg(frame).arg(tcs);
-    infoMutex.unlock();
+    //}
 
 }
 

@@ -80,13 +80,10 @@ private:
     QMap <int, QString > skelDesc;
 
     QMutex dataMutex;
-    QMutex infoMutex;
 
     QString mUdpServer;
     int     mUdpPort;
     bool    store;
-
-    QString  infoMessage;
 
 
 private slots:
@@ -99,6 +96,9 @@ signals:
     void outLog(QString);
     void outFrame(int, QString);
     void outFps(int);
+    void outRBList(QStringList)
+    void outSkelList(QStringList)
+    void outMarkerList(QStringList)
 };
 
 
